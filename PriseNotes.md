@@ -1,6 +1,5 @@
 # Notes sur la Structure Clean Architecture
 
-Voici un résumé des responsabilités de chaque dossier dans la nouvelle structure du projet :
 
 ## 1. Domain (`src/Domain`)
 C'est le **cœur métier** (indépendant du framework).
@@ -23,6 +22,7 @@ Implémentations techniques et outils externes.
 Points d'entrée de l'application.
 - **Http/Controller/** : Contrôleurs API/Web.
 - **Cli/Command/** : Commandes de terminal.
+
 
 
 
