@@ -19,29 +19,22 @@ services:
     App\:
         resource: "../src/"
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # --- Repository Bindings (Hexagonal Architecture) ---
+    App\Domain\Repository\UserRepositoryInterface: '@App\Infrastructure\Persistence\Doctrine\Repository\UserRepository'
+    App\Domain\Repository\RefreshTokenRepositoryInterface: '@App\Infrastructure\Persistence\Doctrine\Repository\RefreshTokenRepository'
+    App\Domain\Repository\ApiSourceRepositoryInterface: '@App\Infrastructure\Persistence\DoctrineApiSourceRepository'
+    App\Domain\Repository\DocumentRepositoryInterface: '@App\Infrastructure\Persistence\DoctrineDocumentRepository'
+    App\Domain\Repository\DocumentVariableRepositoryInterface: '@App\Infrastructure\Persistence\DoctrineDocumentVariableRepository'
+    App\Domain\Repository\DocumentGenerationRepositoryInterface: '@App\Infrastructure\Persistence\DoctrineDocumentGenerationRepository'
+    App\Domain\Repository\TemplateRepositoryInterface: '@App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTemplateRepository'
+    App\Domain\Repository\CodeProcessorRepositoryInterface: '@App\Infrastructure\Persistence\Doctrine\Repository\DoctrineCodeProcessorRepository'
 
-    # Repository bindings
-    App\Domain\Repository\ApiSourceRepositoryInterface:
-        class: App\Infrastructure\Persistence\DoctrineApiSourceRepository
+    # --- Domain Services & Infrastructure Adapters ---
+    App\Application\Service\TokenManagerInterface: '@App\Infrastructure\Security\JwtTokenManager'
+    App\Domain\Service\RefreshTokenGeneratorInterface: '@App\Infrastructure\Security\RefreshTokenGenerator'
+    App\Domain\Service\PasswordHasherInterface: '@App\Infrastructure\Security\SymfonyPasswordHasherAdapter'
 
-    App\Domain\Repository\DocumentRepositoryInterface:
-        class: App\Infrastructure\Persistence\DoctrineDocumentRepository
-
-    App\Domain\Repository\DocumentVariableRepositoryInterface:
-        class: App\Infrastructure\Persistence\DoctrineDocumentVariableRepository
-
-    App\Domain\Repository\DocumentGenerationRepositoryInterface:
-        class: App\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentGenerationRepository
-
-    App\Domain\Repository\TemplateRepositoryInterface:
-        class: App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTemplateRepository
-
-    App\Domain\Repository\CodeProcessorRepositoryInterface:
-        class: App\Infrastructure\Persistence\Doctrine\Repository\DoctrineCodeProcessorRepository
-
-    # Configure arguments for services
+    # --- Arguments for specific services ---
     App\Application\Service\DocumentGenerationService:
         arguments:
             $generatedFilesPath: '%kernel.project_dir%/public/generated'

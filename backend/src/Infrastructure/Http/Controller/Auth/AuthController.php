@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[Route('/api/auth')]
@@ -36,9 +36,17 @@ class AuthController extends AbstractController
     public function register(Request $request): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $content = $request->getContent();
+            if (empty($content)) {
+                return $this->json(['error' => 'Contenu vide'], Response::HTTP_BAD_REQUEST);
+            }
 
-            if (!isset($data['email']) || !isset($data['password']) || !isset($data['name'])) {
+            $data = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return $this->json(['error' => 'JSON invalide: ' . json_last_error_msg()], Response::HTTP_BAD_REQUEST);
+            }
+
+            if (!isset($data['email'], $data['password'], $data['name'])) {
                 return $this->json(
                     ['error' => 'email, password et name sont requis'],
                     Response::HTTP_BAD_REQUEST
@@ -46,11 +54,12 @@ class AuthController extends AbstractController
             }
 
             $dto = new RegisterUserRequest(
-                email: $data['email'],
-                password: $data['password'],
-                name: $data['name'],
+                email: (string)$data['email'],
+                password: (string)$data['password'],
+                name: (string)$data['name'],
             );
 
+            // Appeler le use case
             $userResponse = ($this->registerUser)($dto);
 
             return $this->json([
@@ -58,21 +67,9 @@ class AuthController extends AbstractController
                 'user' => $userResponse,
             ], Response::HTTP_CREATED);
         } catch (\RuntimeException $e) {
-            // Erreur métier (email existant, etc.)
-            return $this->json(
-                ['error' => $e->getMessage()],
-                Response::HTTP_CONFLICT
-            );
-        } catch (\JsonException $e) {
-            return $this->json(
-                ['error' => 'JSON invalide'],
-                Response::HTTP_BAD_REQUEST
-            );
-        } catch (\Exception $e) {
-            return $this->json(
-                ['error' => 'Erreur interne du serveur'],
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+        } catch (\Throwable $e) {
+            return $this->json(['error' => 'Erreur interne du serveur'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -136,16 +133,8 @@ class AuthController extends AbstractController
                 ['error' => $e->getMessage()],
                 Response::HTTP_UNAUTHORIZED
             );
-        } catch (\JsonException $e) {
-            return $this->json(
-                ['error' => 'JSON invalide'],
-                Response::HTTP_BAD_REQUEST
-            );
-        } catch (\Exception $e) {
-            return $this->json(
-                ['error' => 'Erreur interne du serveur'],
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
+        } catch (\Throwable $e) {
+            return $this->json(['error' => 'Erreur interne du serveur'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
