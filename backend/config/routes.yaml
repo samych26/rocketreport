@@ -9,3 +9,7 @@
 
 controllers:
     resource: routing.controllers
+
+infrastructure_controllers:
+    resource: ../src/Infrastructure/Http/Controller/
+    type: attribute

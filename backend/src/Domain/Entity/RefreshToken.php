@@ -1,60 +1,82 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entity;
 
-use App\Domain\ValueObject\RefreshTokenId;
-use App\Domain\ValueObject\UserId;
-use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
 
-final class RefreshToken
+#[ORM\Entity(repositoryClass: \App\Infrastructure\Persistence\Doctrine\Repository\RefreshTokenRepository::class)]
+#[ORM\Table(name: 'refresh_tokens')]
+class RefreshToken
 {
-    private RefreshTokenId $id;
-    private UserId $userId;
-    private string $token;
-    private DateTimeImmutable $expiresAt;
-    private bool $revoked;
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'AUTO')]
+    #[ORM\Column(type: 'integer')]
+    private ?int $id = null;
 
-    public function __construct(
-        RefreshTokenId $id,
-        UserId $userId,
-        string $token,
-        DateTimeImmutable $expiresAt,
-        bool $revoked = false
-    ) {
-        $this->id = $id;
-        $this->userId = $userId;
-        $this->token = $token;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private User $user;
+
+    #[ORM\Column(type: 'string', length: 255, unique: true)]
+    private string $tokenHash;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $expiresAt;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $revokedAt = null;
+
+    public function __construct(User $user, string $tokenHash, \DateTimeImmutable $expiresAt)
+    {
+        $this->user = $user;
+        $this->tokenHash = $tokenHash;
         $this->expiresAt = $expiresAt;
-        $this->revoked = $revoked;
+        $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function id(): RefreshTokenId
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function userId(): UserId
+    public function getUser(): User
     {
-        return $this->userId;
+        return $this->user;
     }
 
-    public function token(): string
+    public function getTokenHash(): string
     {
-        return $this->token;
+        return $this->tokenHash;
     }
 
-    public function expiresAt(): DateTimeImmutable
+    public function getExpiresAt(): \DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
-    public function revoked(): bool
+    public function getCreatedAt(): \DateTimeImmutable
     {
-        return $this->revoked;
+        return $this->createdAt;
+    }
+
+    public function getRevokedAt(): ?\DateTimeImmutable
+    {
+        return $this->revokedAt;
     }
 
     public function revoke(): void
     {
-        $this->revoked = true;
+        $this->revokedAt = new \DateTimeImmutable();
+    }
+
+    public function isValidAt(\DateTimeImmutable $pointInTime): bool
+    {
+        return $this->revokedAt === null && $this->expiresAt > $pointInTime;
     }
 }
+

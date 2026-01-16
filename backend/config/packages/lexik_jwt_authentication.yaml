@@ -1,4 +1,16 @@
 lexik_jwt_authentication:
-    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
-    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
-    pass_phrase: '%env(JWT_PASSPHRASE)%'
+    secret_key: "%env(resolve:JWT_SECRET_KEY)%"
+    public_key: "%env(resolve:JWT_PUBLIC_KEY)%"
+    pass_phrase: "%env(JWT_PASSPHRASE)%"
+
+    # ✅ Configurer l'extraction du JWT depuis les cookies
+    token_extractors:
+        # Extraction depuis le header Authorization
+        authorization_header:
+            enabled: true
+            prefix: Bearer
+            name: Authorization
+        # ✅ IMPORTANT: Extraction depuis le cookie rr_access
+        cookie:
+            enabled: true
+            name: rr_access

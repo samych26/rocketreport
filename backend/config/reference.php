@@ -148,7 +148,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         cookie_name?: scalar|null|Param, // The name of the cookie to use when using stateless protection. // Default: "csrf-token"
  *     },
  *     form?: bool|array{ // Form configuration
- *         enabled?: bool|Param, // Default: true
+ *         enabled?: bool|Param, // Default: false
  *         csrf_protection?: array{
  *             enabled?: scalar|null|Param, // Default: null
  *             token_id?: scalar|null|Param, // Default: null
@@ -426,7 +426,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         resources?: array<string, scalar|null|Param>,
  *     },
  *     messenger?: bool|array{ // Messenger configuration
- *         enabled?: bool|Param, // Default: false
+ *         enabled?: bool|Param, // Default: true
  *         routing?: array<string, array{ // Default: []
  *             senders?: list<scalar|null|Param>,
  *         }>,
@@ -747,7 +747,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             options?: array<string, mixed>,
  *             mapping_types?: array<string, scalar|null|Param>,
  *             default_table_options?: array<string, scalar|null|Param>,
- *             schema_manager_factory?: scalar|null|Param, // Default: "doctrine.dbal.legacy_schema_manager_factory"
+ *             schema_manager_factory?: scalar|null|Param, // Default: "doctrine.dbal.default_schema_manager_factory"
  *             result_cache?: scalar|null|Param,
  *             slaves?: array<string, array{ // Default: []
  *                 url?: scalar|null|Param, // A URL with connection information; any parameter value parsed from this string will override explicitly set parameters
@@ -942,6 +942,11 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     organize_migrations?: scalar|null|Param, // Organize migrations mode. Possible values are: "BY_YEAR", "BY_YEAR_AND_MONTH", false // Default: false
  *     enable_profiler?: bool|Param, // Whether or not to enable the profiler collector to calculate and visualize migration status. This adds some queries overhead. // Default: false
  *     transactional?: bool|Param, // Whether or not to wrap migrations in a single transaction. // Default: true
+ * }
+ * @psalm-type MakerConfig = array{
+ *     root_namespace?: scalar|null|Param, // Default: "App"
+ *     generate_final_classes?: bool|Param, // Default: true
+ *     generate_final_entities?: bool|Param, // Default: false
  * }
  * @psalm-type SecurityConfig = array{
  *     access_denied_url?: scalar|null|Param, // Default: null
@@ -1261,11 +1266,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     }>,
  *     role_hierarchy?: array<string, string|list<scalar|null|Param>>,
  * }
- * @psalm-type MakerConfig = array{
- *     root_namespace?: scalar|null|Param, // Default: "App"
- *     generate_final_classes?: bool|Param, // Default: true
- *     generate_final_entities?: bool|Param, // Default: false
- * }
  * @psalm-type LexikJwtAuthenticationConfig = array{
  *     public_key?: scalar|null|Param, // The key used to sign tokens (useless for HMAC). If not set, the key will be automatically computed from the secret key. // Default: null
  *     additional_public_keys?: list<scalar|null|Param>,
@@ -1351,38 +1351,33 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         cache?: scalar|null|Param, // Storage to track blocked tokens // Default: "cache.app"
  *     },
  * }
- * @psalm-type TwigConfig = array{
- *     form_themes?: list<scalar|null|Param>,
- *     globals?: array<string, array{ // Default: []
- *         id?: scalar|null|Param,
- *         type?: scalar|null|Param,
- *         value?: mixed,
+ * @psalm-type NelmioCorsConfig = array{
+ *     defaults?: array{
+ *         allow_credentials?: bool|Param, // Default: false
+ *         allow_origin?: list<scalar|null|Param>,
+ *         allow_headers?: list<scalar|null|Param>,
+ *         allow_methods?: list<scalar|null|Param>,
+ *         allow_private_network?: bool|Param, // Default: false
+ *         expose_headers?: list<scalar|null|Param>,
+ *         max_age?: scalar|null|Param, // Default: 0
+ *         hosts?: list<scalar|null|Param>,
+ *         origin_regex?: bool|Param, // Default: false
+ *         forced_allow_origin_value?: scalar|null|Param, // Default: null
+ *         skip_same_as_origin?: bool|Param, // Default: true
+ *     },
+ *     paths?: array<string, array{ // Default: []
+ *         allow_credentials?: bool|Param,
+ *         allow_origin?: list<scalar|null|Param>,
+ *         allow_headers?: list<scalar|null|Param>,
+ *         allow_methods?: list<scalar|null|Param>,
+ *         allow_private_network?: bool|Param,
+ *         expose_headers?: list<scalar|null|Param>,
+ *         max_age?: scalar|null|Param, // Default: 0
+ *         hosts?: list<scalar|null|Param>,
+ *         origin_regex?: bool|Param,
+ *         forced_allow_origin_value?: scalar|null|Param, // Default: null
+ *         skip_same_as_origin?: bool|Param,
  *     }>,
- *     autoescape_service?: scalar|null|Param, // Default: null
- *     autoescape_service_method?: scalar|null|Param, // Default: null
- *     base_template_class?: scalar|null|Param, // Deprecated: The child node "base_template_class" at path "twig.base_template_class" is deprecated.
- *     cache?: scalar|null|Param, // Default: true
- *     charset?: scalar|null|Param, // Default: "%kernel.charset%"
- *     debug?: bool|Param, // Default: "%kernel.debug%"
- *     strict_variables?: bool|Param, // Default: "%kernel.debug%"
- *     auto_reload?: scalar|null|Param,
- *     optimizations?: int|Param,
- *     default_path?: scalar|null|Param, // The default path used to load templates. // Default: "%kernel.project_dir%/templates"
- *     file_name_pattern?: list<scalar|null|Param>,
- *     paths?: array<string, mixed>,
- *     date?: array{ // The default format options used by the date filter.
- *         format?: scalar|null|Param, // Default: "F j, Y H:i"
- *         interval_format?: scalar|null|Param, // Default: "%d days"
- *         timezone?: scalar|null|Param, // The timezone used when formatting dates, when set to null, the timezone returned by date_default_timezone_get() is used. // Default: null
- *     },
- *     number_format?: array{ // The default format options for the number_format filter.
- *         decimals?: int|Param, // Default: 0
- *         decimal_point?: scalar|null|Param, // Default: "."
- *         thousands_separator?: scalar|null|Param, // Default: ","
- *     },
- *     mailer?: array{
- *         html_to_text_converter?: scalar|null|Param, // A service implementing the "Symfony\Component\Mime\HtmlToTextConverter\HtmlToTextConverterInterface". // Default: null
- *     },
  * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
@@ -1393,7 +1388,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     doctrine_migrations?: DoctrineMigrationsConfig,
  *     security?: SecurityConfig,
  *     lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
- *     twig?: TwigConfig,
+ *     nelmio_cors?: NelmioCorsConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1401,10 +1396,10 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         framework?: FrameworkConfig,
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
- *         security?: SecurityConfig,
  *         maker?: MakerConfig,
+ *         security?: SecurityConfig,
  *         lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
- *         twig?: TwigConfig,
+ *         nelmio_cors?: NelmioCorsConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1415,7 +1410,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         security?: SecurityConfig,
  *         lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
- *         twig?: TwigConfig,
+ *         nelmio_cors?: NelmioCorsConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1426,7 +1421,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         security?: SecurityConfig,
  *         lexik_jwt_authentication?: LexikJwtAuthenticationConfig,
- *         twig?: TwigConfig,
+ *         nelmio_cors?: NelmioCorsConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

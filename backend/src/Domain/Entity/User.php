@@ -1,111 +1,112 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entity;
 
-use App\Domain\ValueObject\UserId;
-use App\Domain\ValueObject\Email;
-use App\Domain\ValueObject\Role;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Doctrine\ORM\Mapping as ORM;
 
-final class User
+#[ORM\Entity(repositoryClass: \App\Infrastructure\Persistence\Doctrine\Repository\UserRepository::class)]
+#[ORM\Table(name: 'users')]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    private UserId $id;
-    private Email $email;
-    private string $passwordHash;
-    private string $firstname;
-    private string $lastname;
-    private Role $role;
-    private bool $isActive;
-    private ?string $resetToken = null;
-    private ?\DateTimeImmutable $resetTokenExpiresAt = null;
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'AUTO')]
+    #[ORM\Column(type: 'integer')]
+    private ?int $id = null;
+
+    #[ORM\Column(type: 'string', length: 180, unique: true)]
+    private string $email;
+
+    #[ORM\Column(type: 'string')]
+    private string $password;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $name;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(type: 'json')]
+    private array $roles = [];
 
     public function __construct(
-        UserId $id,
-        Email $email,
-        string $passwordHash,
-        string $firstname,
-        string $lastname,
-        Role $role,
-        bool $isActive = true,
-        ?string $resetToken = null,
-        ?\DateTimeImmutable $resetTokenExpiresAt = null
+        string $email,
+        string $password,
+        string $name
     ) {
-        $this->id = $id;
         $this->email = $email;
-        $this->passwordHash = $passwordHash;
-        $this->firstname = $firstname;
-        $this->lastname = $lastname;
-        $this->role = $role;
-        $this->isActive = $isActive;
-        $this->resetToken = $resetToken;
-        $this->resetTokenExpiresAt = $resetTokenExpiresAt;
+        $this->password = $password;
+        $this->name = $name;
+        $this->createdAt = new \DateTimeImmutable();
     }
 
-
-    public function firstname(): string
-    {
-        return $this->firstname;
-    }
-
-    public function lastname(): string
-    {
-        return $this->lastname;
-    }
-
-    public function id(): UserId
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function email(): Email
+    public function getEmail(): string
     {
         return $this->email;
     }
 
-    public function passwordHash(): string
+    public function setEmail(string $email): self
     {
-        return $this->passwordHash;
+        $this->email = $email;
+        return $this;
     }
 
-    public function role(): Role
+    public function getPassword(): string
     {
-        return $this->role;
+        return $this->password;
     }
 
-    public function isActive(): bool
+    public function setPassword(string $password): self
     {
-        return $this->isActive;
+        $this->password = $password;
+        return $this;
     }
 
-    public function resetToken(): ?string
+    public function getName(): string
     {
-        return $this->resetToken;
+        return $this->name;
     }
 
-    public function resetTokenExpiresAt(): ?\DateTimeImmutable
+    public function setName(string $name): self
     {
-        return $this->resetTokenExpiresAt;
+        $this->name = $name;
+        return $this;
     }
 
-    public function generateResetToken(): string
+    public function getCreatedAt(): \DateTimeImmutable
     {
-        $this->resetToken = bin2hex(random_bytes(32));
-        $this->resetTokenExpiresAt = (new \DateTimeImmutable())->modify('+1 hour');
-        return $this->resetToken;
+        return $this->createdAt;
     }
 
-    public function clearResetToken(): void
+    // Implémentation UserInterface
+    public function getUserIdentifier(): string
     {
-        $this->resetToken = null;
-        $this->resetTokenExpiresAt = null;
+        return $this->email;
     }
 
-    public function updatePassword(string $newPasswordHash): void
+    public function getRoles(): array
     {
-        $this->passwordHash = $newPasswordHash;
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+        return array_unique($roles);
     }
 
-    public function deactivate(): void
+    public function setRoles(array $roles): self
     {
-        $this->isActive = false;
+        $this->roles = $roles;
+        return $this;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // Si vous stockez des données sensibles temporaires, nettoyez-les ici
     }
 }

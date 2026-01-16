@@ -11,32 +11,45 @@ parameters:
 services:
     # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
+        autowire: true # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     App\:
-        resource: '../src/'
-        exclude:
-            - '../src/DependencyInjection/'
-            - '../src/Domain/Entity/'
-            - '../src/Domain/ValueObject/'
-            - '../src/Application/DTO/'
-            - '../src/Kernel.php'
+        resource: "../src/"
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    App\Domain\Repository\UserRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\UserRepositoryDoctrine'
-    App\Domain\Repository\TemplateRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\TemplateRepositoryDoctrine'
-    App\Domain\Repository\ApiSourceRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\ApiSourceRepositoryDoctrine'
-    App\Domain\Repository\AuditLogRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\AuditLogRepositoryDoctrine'
-    App\Domain\Repository\DocumentGenerationRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\DocumentGenerationRepositoryDoctrine'
-    App\Domain\Repository\RefreshTokenRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\RefreshTokenRepositoryDoctrine'
+    # Repository bindings
+    App\Domain\Repository\ApiSourceRepositoryInterface:
+        class: App\Infrastructure\Persistence\DoctrineApiSourceRepository
 
-    # Services
-    App\Domain\Service\DocumentGenerator: '@App\Infrastructure\Service\TwigDocumentGenerator'
-    App\Domain\Service\ApiClient: '@App\Infrastructure\Service\GuzzleApiClient'
-    App\Domain\Service\AuditService: '@App\Infrastructure\Service\LoggerAuditService'
-    App\Domain\Service\PasswordHasher: '@App\Infrastructure\Security\SymfonyPasswordHasher'
+    App\Domain\Repository\DocumentRepositoryInterface:
+        class: App\Infrastructure\Persistence\DoctrineDocumentRepository
+
+    App\Domain\Repository\DocumentVariableRepositoryInterface:
+        class: App\Infrastructure\Persistence\DoctrineDocumentVariableRepository
+
+    App\Domain\Repository\DocumentGenerationRepositoryInterface:
+        class: App\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentGenerationRepository
+
+    App\Domain\Repository\TemplateRepositoryInterface:
+        class: App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTemplateRepository
+
+    App\Domain\Repository\CodeProcessorRepositoryInterface:
+        class: App\Infrastructure\Persistence\Doctrine\Repository\DoctrineCodeProcessorRepository
+
+    # Configure arguments for services
+    App\Application\Service\DocumentGenerationService:
+        arguments:
+            $generatedFilesPath: '%kernel.project_dir%/public/generated'
+
+    App\Infrastructure\External\CodeExecution\JavaScriptSandboxService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Infrastructure\External\PdfGeneration\SnappyPdfService:
+        arguments:
+            $wkhtmltopdfBinary: '/usr/bin/wkhtmltopdf'
