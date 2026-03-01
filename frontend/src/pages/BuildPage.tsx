@@ -1,0 +1,554 @@
+import { useState, useEffect } from 'react';
+import {
+    Plus, Hammer, Trash2, Pencil, Play, RefreshCw,
+    ChevronRight, ChevronLeft, Check, Plug, FileCode,
+    Loader2, AlertCircle, CheckCircle2, Terminal,
+} from 'lucide-react';
+import { buildService } from '../services/buildService';
+import type { Build, BuildPayload, PreviewResult, RunCodeResult } from '../services/buildService';
+import { apiSourceService } from '../services/apiSourceService';
+import type { ApiSource } from '../services/apiSourceService';
+import { templateService } from '../services/templateService';
+import type { Template } from '../services/templateService';
+import MainLayout from '../layouts/MainLayout';
+import './PlaceholderPage.css';
+import './BuildPage.css';
+
+/* ─── Default JS code ─── */
+const DEFAULT_CODE = `// apiData contient la réponse de l'API
+// Retournez l'objet de données à injecter dans le template
+
+function process(apiData) {
+    // Exemple : aplatir, filtrer, transformer...
+    return {
+        title: "Mon rapport",
+        generated_at: new Date().toISOString(),
+        items: Array.isArray(apiData) ? apiData : [apiData],
+    };
+}
+
+// Ne pas modifier cette ligne
+module.exports = process(apiData);`;
+
+type Step = 1 | 2 | 3 | 4;
+
+/* ═══════════════════════════════════════════════════════
+   WIZARD COMPONENT
+═══════════════════════════════════════════════════════ */
+interface WizardProps {
+    editing?: Build | null;
+    apiSources: ApiSource[];
+    templates: Template[];
+    onSave: (payload: BuildPayload, id?: number) => Promise<void>;
+    onCancel: () => void;
+}
+
+const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: WizardProps) => {
+    const isEditing = !!editing;
+    const [step, setStep] = useState<Step>(1);
+
+    /* Step 1 — API Source */
+    const [sourceId, setSourceId]       = useState<number | null>(editing?.api_source.id ?? null);
+    const [endpoint, setEndpoint]       = useState(editing?.endpoint ?? '');
+    const [method, setMethod]           = useState(editing?.method ?? 'GET');
+    const [preview, setPreview]         = useState<PreviewResult | null>(null);
+    const [fetching, setFetching]       = useState(false);
+
+    /* Step 2 — Code */
+    const [code, setCode]               = useState(editing?.code ?? DEFAULT_CODE);
+    const [codeResult, setCodeResult]   = useState<RunCodeResult | null>(null);
+    const [running, setRunning]         = useState(false);
+
+    /* Step 3 — Template */
+    const [templateId, setTemplateId]   = useState<number | null>(editing?.template?.id ?? null);
+
+    /* Step 4 — Finalize */
+    const [name, setName]               = useState(editing?.name ?? '');
+    const [description, setDesc]        = useState(editing?.description ?? '');
+    const [saving, setSaving]           = useState(false);
+    const [error, setError]             = useState('');
+
+    const selectedSource = apiSources.find(s => s.id === sourceId);
+
+    /* ── Step 1 : fetch preview ── */
+    const fetchPreview = async () => {
+        if (!sourceId || !endpoint) return;
+        setFetching(true);
+        setPreview(null);
+        try {
+            const result = await buildService.previewData({ api_source_id: sourceId, endpoint, method });
+            setPreview(result);
+        } catch {
+            setPreview({ success: false, error: 'Erreur réseau' });
+        } finally {
+            setFetching(false);
+        }
+    };
+
+    /* ── Step 2 : run code ── */
+    const runCode = async () => {
+        setRunning(true);
+        setCodeResult(null);
+        try {
+            const inputData = preview?.data ?? {};
+            const result = await buildService.runCode(code, inputData);
+            setCodeResult(result);
+        } catch {
+            setCodeResult({ success: false, error: 'Erreur réseau' });
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    /* ── Submit ── */
+    const handleSave = async () => {
+        if (!name.trim()) { setError('Le nom du build est requis.'); return; }
+        if (!sourceId)    { setError('Sélectionnez une source API.'); return; }
+        if (!endpoint)    { setError("L'endpoint est requis."); return; }
+        if (!code.trim()) { setError('Le code de transformation est requis.'); return; }
+
+        setSaving(true);
+        setError('');
+        try {
+            await onSave({
+                name, description: description || undefined,
+                api_source_id: sourceId, endpoint, method,
+                code, template_id: templateId ?? undefined,
+            }, editing?.id);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erreur lors de la sauvegarde.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const canNext: Record<Step, boolean> = {
+        1: !!sourceId && !!endpoint,
+        2: code.trim().length > 10,
+        3: true,
+        4: true,
+    };
+
+    const STEPS = [
+        { n: 1, label: 'Source API' },
+        { n: 2, label: 'Code' },
+        { n: 3, label: 'Template' },
+        { n: 4, label: 'Finaliser' },
+    ];
+
+    return (
+        <div className="wizard-overlay">
+            <div className="wizard-panel">
+                {/* Header */}
+                <div className="wizard-header">
+                    <div className="wizard-title">
+                        <Hammer size={20} />
+                        <h2>{isEditing ? 'Modifier le build' : 'Nouveau build'}</h2>
+                    </div>
+                    {/* Stepper */}
+                    <div className="wizard-stepper">
+                        {STEPS.map(({ n, label }, i) => (
+                            <div key={n} className="stepper-item">
+                                <button
+                                    className={`stepper-dot ${step === n ? 'active' : step > n ? 'done' : ''}`}
+                                    onClick={() => step > n && setStep(n as Step)}>
+                                    {step > n ? <Check size={12} /> : n}
+                                </button>
+                                <span className={`stepper-label ${step === n ? 'active' : ''}`}>{label}</span>
+                                {i < STEPS.length - 1 && <div className={`stepper-line ${step > n ? 'done' : ''}`} />}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="wizard-body">
+
+                    {/* ── STEP 1: API Source ── */}
+                    {step === 1 && (
+                        <div className="wizard-step">
+                            <h3 className="step-title"><Plug size={16} /> Sélectionnez une source API</h3>
+
+                            <div className="source-grid">
+                                {apiSources.length === 0 ? (
+                                    <p className="no-data">Aucune source API configurée. <br/>Allez créer une source dans "API Sources".</p>
+                                ) : apiSources.map(src => (
+                                    <div key={src.id}
+                                        className={`source-card ${sourceId === src.id ? 'selected' : ''}`}
+                                        onClick={() => setSourceId(src.id)}>
+                                        <div className="source-card-icon"><Plug size={16} /></div>
+                                        <div className="source-card-info">
+                                            <span className="source-card-name">{src.name}</span>
+                                            <span className="source-card-url">{src.url_base}</span>
+                                        </div>
+                                        {sourceId === src.id && <Check size={16} className="source-check" />}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {sourceId && (
+                                <div className="endpoint-config">
+                                    <div className="endpoint-row">
+                                        <select value={method} onChange={e => setMethod(e.target.value)} className="method-select">
+                                            {['GET','POST','PUT','PATCH','DELETE'].map(m => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                        <div className="url-preview-prefix">{selectedSource?.url_base}/</div>
+                                        <input className="endpoint-input" type="text"
+                                            placeholder="users, reports/monthly…"
+                                            value={endpoint} onChange={e => setEndpoint(e.target.value)} />
+                                        <button className="btn-fetch" onClick={fetchPreview} disabled={!endpoint || fetching}>
+                                            {fetching ? <Loader2 size={15} className="spin" /> : 'Tester'}
+                                        </button>
+                                    </div>
+
+                                    {preview && (
+                                        <div className={`preview-box ${preview.success ? 'ok' : 'err'}`}>
+                                            <div className="preview-box-header">
+                                                {preview.success
+                                                    ? <><CheckCircle2 size={14}/> HTTP {preview.status_code} — Données reçues</>
+                                                    : <><AlertCircle size={14}/> Erreur : {preview.error}</>}
+                                            </div>
+                                            {preview.success && (
+                                                <pre className="preview-json">
+                                                    {JSON.stringify(preview.data, null, 2).slice(0, 1200)}
+                                                    {JSON.stringify(preview.data).length > 1200 ? '\n…' : ''}
+                                                </pre>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── STEP 2: Code ── */}
+                    {step === 2 && (
+                        <div className="wizard-step wizard-step--code">
+                            <div className="code-pane">
+                                <div className="code-pane-header">
+                                    <Terminal size={14} /> Transformation JavaScript
+                                    <span className="code-hint">
+                                        Variable disponible : <code>apiData</code> — retournez l'objet de données pour le template
+                                    </span>
+                                    <button className="btn-run" onClick={runCode} disabled={running}>
+                                        {running ? <Loader2 size={13} className="spin" /> : <><Play size={13}/> Exécuter</>}
+                                    </button>
+                                </div>
+                                <textarea
+                                    className="code-editor"
+                                    value={code}
+                                    onChange={e => setCode(e.target.value)}
+                                    spellCheck={false}
+                                />
+                            </div>
+
+                            <div className="code-result-pane">
+                                <div className="code-pane-header"><Terminal size={14} /> Résultat</div>
+                                {!codeResult && (
+                                    <div className="result-empty">
+                                        Cliquez sur "Exécuter" pour tester votre code avec les données de l'API.
+                                    </div>
+                                )}
+                                {codeResult && (
+                                    <div className={`result-box ${codeResult.success ? 'ok' : 'err'}`}>
+                                        {!codeResult.success && (
+                                            <div className="result-error"><AlertCircle size={13}/> {codeResult.error}</div>
+                                        )}
+                                        {codeResult.success && (
+                                            <pre className="result-json">
+                                                {JSON.stringify(codeResult.output_data, null, 2).slice(0, 2000)}
+                                            </pre>
+                                        )}
+                                        {codeResult.logs && codeResult.logs.length > 0 && (
+                                            <div className="result-logs">
+                                                {codeResult.logs.map((l, i) => <div key={i} className="log-line">» {l}</div>)}
+                                            </div>
+                                        )}
+                                        {codeResult.execution_time_ms !== undefined && (
+                                            <div className="result-time">⏱ {codeResult.execution_time_ms} ms</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="api-data-preview">
+                                    <div className="code-pane-header">Données d'entrée (apiData)</div>
+                                    <pre className="result-json">
+                                        {preview?.data
+                                            ? JSON.stringify(preview.data, null, 2).slice(0, 600)
+                                            : '// Aucune donnée — testez d\'abord la source à l\'étape 1'}
+                                    </pre>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── STEP 3: Template ── */}
+                    {step === 3 && (
+                        <div className="wizard-step">
+                            <h3 className="step-title"><FileCode size={16}/> Associez un template <span className="optional-tag">(optionnel)</span></h3>
+                            <p className="step-desc">Le template sera utilisé lors de la génération pour mettre en forme les données.</p>
+
+                            <div className="template-grid">
+                                <div
+                                    className={`tpl-choice-card ${templateId === null ? 'selected' : ''}`}
+                                    onClick={() => setTemplateId(null)}>
+                                    <span className="tpl-choice-none">⊘ Aucun template</span>
+                                </div>
+                                {templates.map(t => (
+                                    <div key={t.id}
+                                        className={`tpl-choice-card ${templateId === t.id ? 'selected' : ''}`}
+                                        onClick={() => setTemplateId(t.id)}>
+                                        <div className="tpl-choice-header">
+                                            <FileCode size={15}/>
+                                            <span className={`tpl-choice-format format-${t.output_format}`}>{t.output_format.toUpperCase()}</span>
+                                            {templateId === t.id && <Check size={14} className="source-check" />}
+                                        </div>
+                                        <div className="tpl-choice-name">{t.name}</div>
+                                        {t.description && <div className="tpl-choice-desc">{t.description}</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── STEP 4: Finalize ── */}
+                    {step === 4 && (
+                        <div className="wizard-step">
+                            <h3 className="step-title">Finalisez votre build</h3>
+
+                            {error && <div className="modal-error" style={{ marginBottom: '1rem' }}>{error}</div>}
+
+                            <div className="form-field">
+                                <label>Nom du build *</label>
+                                <input type="text" placeholder="Ex: Rapport mensuel ventes…"
+                                    value={name} onChange={e => setName(e.target.value)} autoFocus />
+                            </div>
+
+                            <div className="form-field">
+                                <label>Description</label>
+                                <input type="text" placeholder="Description optionnelle…"
+                                    value={description} onChange={e => setDesc(e.target.value)} />
+                            </div>
+
+                            {/* Summary */}
+                            <div className="build-summary">
+                                <div className="summary-row">
+                                    <Plug size={14}/> <strong>Source :</strong> {selectedSource?.name} — <code>{method} /{endpoint}</code>
+                                </div>
+                                <div className="summary-row">
+                                    <Terminal size={14}/> <strong>Code :</strong> {code.split('\n').length} lignes
+                                </div>
+                                <div className="summary-row">
+                                    <FileCode size={14}/> <strong>Template :</strong>{' '}
+                                    {templateId ? templates.find(t => t.id === templateId)?.name : 'Aucun'}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer navigation */}
+                <div className="wizard-footer">
+                    <button className="btn-cancel" onClick={onCancel}>Annuler</button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {step > 1 && (
+                            <button className="btn-prev" onClick={() => setStep((step - 1) as Step)}>
+                                <ChevronLeft size={15}/> Précédent
+                            </button>
+                        )}
+                        {step < 4 ? (
+                            <button className="btn-next" onClick={() => setStep((step + 1) as Step)}
+                                disabled={!canNext[step]}>
+                                Suivant <ChevronRight size={15}/>
+                            </button>
+                        ) : (
+                            <button className="btn-save" onClick={handleSave} disabled={saving}>
+                                {saving ? <Loader2 size={15} className="spin"/> : <><Check size={15}/>{' '}{isEditing ? 'Mettre à jour' : 'Créer le build'}</>}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/* ═══════════════════════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════════════════════ */
+const BuildPage = () => {
+    const [builds, setBuilds]         = useState<Build[]>([]);
+    const [apiSources, setApiSources] = useState<ApiSource[]>([]);
+    const [templates, setTemplates]   = useState<Template[]>([]);
+    const [loading, setLoading]       = useState(true);
+    const [error, setError]           = useState('');
+    const [showWizard, setShowWizard] = useState(false);
+    const [editing, setEditing]       = useState<Build | null>(null);
+    const [generating, setGenerating] = useState<Record<number, boolean>>({});
+    const [genMsg, setGenMsg]         = useState<Record<number, { ok: boolean; msg: string }>>({});
+
+    const load = async () => {
+        setLoading(true);
+        try {
+            const [b, s, t] = await Promise.all([
+                buildService.list(),
+                apiSourceService.list(),
+                templateService.list(),
+            ]);
+            setBuilds(b); setApiSources(s); setTemplates(t);
+        } catch {
+            setError('Impossible de charger les builds.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const handleSave = async (payload: BuildPayload, id?: number) => {
+        if (id) {
+            const updated = await buildService.update(id, payload);
+            setBuilds(b => b.map(x => x.id === id ? updated : x));
+        } else {
+            const created = await buildService.create(payload);
+            setBuilds(b => [created, ...b]);
+        }
+        setShowWizard(false);
+        setEditing(null);
+    };
+
+    const handleDelete = async (build: Build) => {
+        if (!confirm(`Supprimer "${build.name}" ?`)) return;
+        try {
+            await buildService.delete(build.id);
+            setBuilds(b => b.filter(x => x.id !== build.id));
+        } catch {
+            alert('Erreur lors de la suppression.');
+        }
+    };
+
+    const handleGenerate = async (build: Build) => {
+        setGenerating(g => ({ ...g, [build.id]: true }));
+        setGenMsg(m => ({ ...m, [build.id]: { ok: true, msg: '' } }));
+        try {
+            const result = await buildService.generate(build.id);
+            setGenMsg(m => ({
+                ...m, [build.id]: { ok: true, msg: `Génération #${result.id} créée ✓` },
+            }));
+        } catch (err: any) {
+            const msg = err.response?.data?.error || err.response?.data?.message || 'Erreur lors de la génération';
+            setGenMsg(m => ({ ...m, [build.id]: { ok: false, msg } }));
+        } finally {
+            setGenerating(g => ({ ...g, [build.id]: false }));
+        }
+    };
+
+    return (
+        <MainLayout>
+            <div className="page-container">
+                <div className="page-header">
+                    <div>
+                        <div className="page-title">
+                            <Hammer size={22} strokeWidth={1.8}/>
+                            <h1>Builds</h1>
+                        </div>
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                            Configurez vos pipelines : source API → transformation → template
+                        </p>
+                    </div>
+                    <div className="page-header-actions">
+                        <button className="btn-icon" onClick={load} title="Rafraîchir"><RefreshCw size={16}/></button>
+                        <button className="btn-primary-action" onClick={() => { setEditing(null); setShowWizard(true); }}>
+                            <Plus size={16}/> Nouveau build
+                        </button>
+                    </div>
+                </div>
+
+                {error && <div className="page-error">{error}</div>}
+
+                {loading ? (
+                    <div className="build-grid">
+                        {[1,2,3].map(i => <div key={i} className="skeleton-card" />)}
+                    </div>
+                ) : builds.length === 0 ? (
+                    <div className="page-empty">
+                        <Hammer size={48} strokeWidth={1} className="empty-icon"/>
+                        <h3>Aucun build</h3>
+                        <p>Créez votre premier build pour connecter une source API à un template.</p>
+                        <button className="btn-primary-action" onClick={() => setShowWizard(true)}>
+                            <Plus size={16}/> Créer un build
+                        </button>
+                    </div>
+                ) : (
+                    <div className="build-grid">
+                        {builds.map(build => (
+                            <div key={build.id} className="build-card">
+                                <div className="build-card-header">
+                                    <div className="build-card-title">{build.name}</div>
+                                    <div className="build-card-actions">
+                                        <button className="tpl-action-btn" onClick={() => { setEditing(build); setShowWizard(true); }} title="Modifier">
+                                            <Pencil size={13}/>
+                                        </button>
+                                        <button className="tpl-action-btn tpl-action-btn--danger" onClick={() => handleDelete(build)} title="Supprimer">
+                                            <Trash2 size={13}/>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="build-card-body">
+                                    <div className="build-meta-row">
+                                        <Plug size={13}/>
+                                        <span>{build.api_source.name}</span>
+                                        <code className="build-method">{build.method}</code>
+                                        <code className="build-endpoint">/{build.endpoint}</code>
+                                    </div>
+
+                                    {build.template && (
+                                        <div className="build-meta-row">
+                                            <FileCode size={13}/>
+                                            <span>{build.template.name}</span>
+                                            <span className={`format-pill format-${build.template.format}`}>{build.template.format.toUpperCase()}</span>
+                                        </div>
+                                    )}
+
+                                    {build.description && (
+                                        <p className="build-desc">{build.description}</p>
+                                    )}
+                                </div>
+
+                                <div className="build-card-footer">
+                                    <button
+                                        className={`btn-generate ${generating[build.id] ? 'loading' : ''}`}
+                                        onClick={() => handleGenerate(build)}
+                                        disabled={generating[build.id]}>
+                                        {generating[build.id]
+                                            ? <><Loader2 size={14} className="spin"/> Génération…</>
+                                            : <><Play size={14}/> Lancer la génération</>}
+                                    </button>
+                                    {genMsg[build.id]?.msg && (
+                                        <span className={`gen-msg ${genMsg[build.id].ok ? 'ok' : 'err'}`}>
+                                            {genMsg[build.id].msg}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {showWizard && (
+                <BuildWizard
+                    editing={editing}
+                    apiSources={apiSources}
+                    templates={templates}
+                    onSave={handleSave}
+                    onCancel={() => { setShowWizard(false); setEditing(null); }}
+                />
+            )}
+        </MainLayout>
+    );
+};
+
+export default BuildPage;

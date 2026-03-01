@@ -1,0 +1,236 @@
+.tpl-error {
+    background: rgba(224, 123, 123, 0.12);
+    border: 1px solid rgba(224, 123, 123, 0.4);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: #e07b7b;
+    margin-bottom: 1rem;
+}
+
+/* Loading skeletons */
+.tpl-loading {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.skeleton-card {
+    height: 180px;
+    border-radius: 14px;
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 25%,
+        var(--border-color) 50%,
+        var(--bg-secondary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Count badge */
+.count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: var(--accent-color);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Templates grid */
+.templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+/* Template card */
+.template-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.template-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+    transform: translateY(-2px);
+}
+
+.dark .template-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* Card header */
+.tpl-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem 0;
+}
+
+.tpl-format-badge {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.format-pill, .status-pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.format-pdf  { background: rgba(210,166,121,0.2); color: #b88d5e; }
+.format-html { background: rgba(127,191,175,0.2); color: #4a9f8e; }
+
+.status-active   { background: rgba(127,191,175,0.15); color: #4a9f8e; }
+.status-inactive { background: rgba(169,169,179,0.15); color: var(--text-secondary); }
+
+/* Card action buttons */
+.tpl-actions {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.tpl-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.tpl-action-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+    box-shadow: none;
+}
+
+.tpl-action-btn--danger:hover {
+    border-color: #e07b7b;
+    color: #e07b7b;
+}
+
+/* Card body */
+.tpl-card-body {
+    padding: 0.75rem 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.tpl-doc-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tpl-description {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tpl-preview {
+    margin: 0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 56px;
+    line-height: 1.4;
+}
+
+/* Card footer */
+.tpl-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Confirm dialog */
+.confirm-dialog {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 1.75rem;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.confirm-dialog h3 {
+    margin: 0 0 0.6rem;
+    font-size: 1.1rem;
+}
+
+.confirm-dialog p {
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.btn-delete {
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    border: none;
+    background: #e07b7b;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete:hover { background: #c96060; box-shadow: 0 4px 12px rgba(224,123,123,0.4); border-color: transparent; color: #fff; }
+.btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }

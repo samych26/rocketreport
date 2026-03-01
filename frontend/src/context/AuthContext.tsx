@@ -28,8 +28,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkAuth = async () => {
         try {
             const response = await api.get('/auth/me');
-            if (response.data) {
-                setUser(response.data);
+            if (response.data?.user) {
+                setUser(response.data.user);
             }
         } catch (error) {
             // User is not authenticated or token expired, that's fine.

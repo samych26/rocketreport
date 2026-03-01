@@ -57,6 +57,13 @@ const translations = {
         sign_up_link: 'S\'inscrire',
         sign_in_link: 'Se connecter',
 
+        // Navigation
+        nav_dashboard: 'Dashboard',
+        nav_templates: 'Templates',
+        nav_api_sources: 'API Sources',
+        nav_build: 'Build',
+        nav_generations: 'Générations',
+
         // Footer
         footer_text: '© 2026 RocketReport. Construit pour l\'automatisation.',
         footer_links: 'Documentation | API | Contact'
@@ -114,6 +121,13 @@ const translations = {
         have_account: 'Already have an account?',
         sign_up_link: 'Sign Up',
         sign_in_link: 'Sign In',
+
+        // Navigation
+        nav_dashboard: 'Dashboard',
+        nav_templates: 'Templates',
+        nav_api_sources: 'API Sources',
+        nav_build: 'Build',
+        nav_generations: 'Generations',
 
         // Footer
         footer_text: '© 2026 RocketReport. Built for automation.',

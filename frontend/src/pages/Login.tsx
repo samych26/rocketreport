@@ -22,7 +22,7 @@ const Login = () => {
 
         try {
             await login({ email, password });
-            navigate('/'); // Redirect to dashboard or home after successful login
+            navigate('/dashboard'); // Redirect to dashboard or home after successful login
         } catch (err: any) {
             setError(err.response?.data?.message || 'Identifiants invalides ou erreur serveur.');
         } finally {

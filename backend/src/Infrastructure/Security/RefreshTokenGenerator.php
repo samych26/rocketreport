@@ -11,7 +11,7 @@ use App\Domain\Service\RefreshTokenGeneratorInterface;
 class RefreshTokenGenerator implements RefreshTokenGeneratorInterface
 {
     public function __construct(
-        private readonly int $ttlDays = 7,
+        private readonly int $ttlDays = 1,
     ) {
     }
 

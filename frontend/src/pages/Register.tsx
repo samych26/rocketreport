@@ -31,7 +31,7 @@ const Register = () => {
 
         try {
             await register({ name, email, password });
-            navigate('/'); // Redirect to dashboard or home after successful registration
+            navigate('/dashboard'); // Redirect to dashboard or home after successful registration
         } catch (err: any) {
             setError(err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la création du compte.');
         } finally {
