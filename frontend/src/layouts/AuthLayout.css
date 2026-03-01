@@ -1,0 +1,122 @@
+.auth-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+}
+
+.auth-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 73px); /* Subtract Navbar height */
+}
+
+@media (min-width: 900px) {
+  .auth-container {
+    flex-direction: row;
+  }
+}
+
+/* Left side Branding */
+.auth-branding {
+  display: none;
+  background-color: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--border-color);
+}
+
+.dark .auth-branding {
+  background: linear-gradient(135deg, #15151a 0%, #1e1e24 100%);
+}
+
+@media (min-width: 900px) {
+  .auth-branding {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem;
+  }
+}
+
+.auth-branding-content {
+  position: relative;
+  z-index: 10;
+  max-width: 500px;
+}
+
+.auth-branding-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 1rem 0;
+  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-branding-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Auth Shapes for Premium look */
+.auth-shapes {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+}
+
+.shape-1 {
+  width: 400px; height: 400px;
+  background: rgba(99, 102, 241, 0.2);
+  top: -100px; left: -100px;
+  animation: floatUp 8s ease-in-out infinite alternate;
+}
+
+.shape-2 {
+  width: 300px; height: 300px;
+  background: rgba(168, 85, 247, 0.15);
+  bottom: 10%; right: -50px;
+  animation: floatUp 6s ease-in-out infinite alternate-reverse;
+}
+
+/* Right side Form Area */
+.auth-form-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+@media (min-width: 900px) {
+  .auth-form-wrapper {
+    flex: 1.2;
+  }
+}
+
+.auth-form-container {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-primary);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+  animation: slideInFade 0.5s ease-out forwards;
+}
+
+.dark .auth-form-container {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}

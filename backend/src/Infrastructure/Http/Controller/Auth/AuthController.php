@@ -69,7 +69,7 @@ class AuthController extends AbstractController
         } catch (\RuntimeException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
         } catch (\Throwable $e) {
-            return $this->json(['error' => 'Erreur interne du serveur'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['error' => 'Erreur interne du serveur: ' . $e->getMessage() . ' - ' . $e->getFile() . ':' . $e->getLine()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
