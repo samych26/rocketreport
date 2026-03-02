@@ -41,7 +41,7 @@ final class HandlebarsRenderer
         ]);
 
         // Créer la fonction de rendu
-        $renderer = eval('?>' . $phpCode);
+        $renderer = eval($phpCode);
 
         // Rendre avec les données
         return $renderer($data);

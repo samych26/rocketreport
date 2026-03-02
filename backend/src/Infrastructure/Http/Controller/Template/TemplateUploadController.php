@@ -57,7 +57,7 @@ final class TemplateUploadController extends AbstractController
 
         try {
             [$content, $variables, $outputFormat] = match (true) {
-                in_array($extension, ['txt', 'html', 'htm'], true) => $this->parseText($file->getPathname()),
+                in_array($extension, ['txt', 'html', 'htm'], true) => $this->parseText($file->getPathname(), $extension),
                 $extension === 'pdf'                               => $this->parsePdf($file->getPathname()),
                 in_array($extension, ['xlsx', 'xls'], true)        => $this->parseExcel($file->getPathname()),
                 $extension === 'csv'                               => $this->parseCsv($file->getPathname()),
@@ -79,12 +79,17 @@ final class TemplateUploadController extends AbstractController
     }
 
     /** Texte / HTML : extraire le contenu + chercher {{variables}} */
-    private function parseText(string $path): array
+    private function parseText(string $path, string $extension): array
     {
         $content = file_get_contents($path);
         $variables = $this->extractHandlebarsVars($content);
 
-        // Si aucune variable Handlebars trouvée, on convertit le contenu brut en template
+        if ($extension === 'txt') {
+            // Garder le contenu tel quel pour la génération texte
+            return [$content, $variables, 'txt'];
+        }
+
+        // HTML/HTM : si pas de variables Handlebars, encapsuler le contenu brut
         if (empty($variables)) {
             $content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
             $content = "<!DOCTYPE html>\n<html><body>\n{$content}\n</body></html>";
@@ -174,7 +179,7 @@ HTML;
         // Les variables du template incluent les colonnes + title, generated_at, items
         $allVars = array_merge(['title', 'generated_at', 'items'], $variables);
 
-        return [$content, $allVars, 'pdf'];
+        return [$content, $allVars, 'xlsx'];
     }
 
     /** CSV : même logique que Excel mais avec fgetcsv */
@@ -205,7 +210,7 @@ HTML;
 </table></body></html>
 HTML;
 
-        return [$content, array_merge(['title', 'items'], $variables), 'pdf'];
+        return [$content, array_merge(['title', 'items'], $variables), 'xlsx'];
     }
 
     /** Extrait les noms de variables Handlebars {{varName}} */

@@ -24,7 +24,9 @@ interface DocumentGenerationRepositoryInterface
      */
     public function findByDocumentWithPagination(Document $document, int $page = 1, int $limit = 20): array;
 
-    public function countByDocument(Document $document): int;
+    public function findCompletedByDocument(Document $document): ?DocumentGeneration;
+
+    public function deleteGeneration(DocumentGeneration $generation): void;
 
     /**
      * @return DocumentGeneration[]

@@ -6,7 +6,7 @@ export interface Template {
     document_id?: number | null;
     document_name?: string | null;
     content: string;
-    output_format: 'html' | 'pdf';
+    output_format: 'html' | 'pdf' | 'xlsx' | 'txt';
     description?: string;
     status: string;
     created_at: string;
@@ -16,7 +16,7 @@ export interface Template {
 export interface TemplatePayload {
     name: string;
     content: string;
-    output_format: 'html' | 'pdf';
+    output_format: 'html' | 'pdf' | 'xlsx' | 'txt';
     description?: string;
 }
 
@@ -48,7 +48,7 @@ export const templateService = {
 export interface UploadResult {
     content: string;
     variables: string[];
-    output_format: 'html' | 'pdf';
+    output_format: 'html' | 'pdf' | 'xlsx' | 'txt';
     source_name: string;
 }
 

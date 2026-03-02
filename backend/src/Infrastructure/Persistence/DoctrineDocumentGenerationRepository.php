@@ -47,6 +47,20 @@ final class DoctrineDocumentGenerationRepository implements DocumentGenerationRe
         return count($this->repository->findBy(['document' => $document]));
     }
 
+    public function findCompletedByDocument(Document $document): ?DocumentGeneration
+    {
+        return $this->repository->findOneBy(
+            ['document' => $document, 'status' => 'completed'],
+            ['created_at' => 'DESC']
+        );
+    }
+
+    public function deleteGeneration(DocumentGeneration $generation): void
+    {
+        $this->em->remove($generation);
+        $this->em->flush();
+    }
+
     public function findSuccessByUser(User $user, int $limit = 10): array
     {
         $qb = $this->em->createQueryBuilder();

@@ -225,6 +225,23 @@ final class BuildController extends AbstractController
             return $this->json(['error' => 'Build introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
+        // Retourner la génération existante si le fichier est encore présent
+        $existing = $this->generationService->getCompletedGenerationForDocument($document);
+        if ($existing !== null) {
+            return $this->json([
+                'id'           => $existing->getId(),
+                'status'       => $existing->getStatus(),
+                'build_id'     => $document->getId(),
+                'build_name'   => $document->getName(),
+                'created_at'   => $existing->getCreatedAt()->format('Y-m-d H:i:s'),
+                'cached'       => true,
+                'download_url' => $this->generateUrl('generation_download', [
+                    'docId' => $document->getId(),
+                    'genId' => $existing->getId(),
+                ]),
+            ]);
+        }
+
         $params = json_decode($request->getContent(), true)['params'] ?? [];
 
         try {
@@ -244,6 +261,7 @@ final class BuildController extends AbstractController
                 'build_id'     => $document->getId(),
                 'build_name'   => $document->getName(),
                 'created_at'   => $generation->getCreatedAt()->format('Y-m-d H:i:s'),
+                'cached'       => false,
                 'download_url' => $this->generateUrl('generation_download', [
                     'docId' => $document->getId(),
                     'genId' => $generation->getId(),

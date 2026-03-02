@@ -45,9 +45,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const login = async (credentials: any) => {
         // 1. Send login request to backend, which sets the HttpOnly cookie
-        await api.post('/auth/login', credentials);
-        // 2. Fetch the user details using the newly set cookie
-        await checkAuth();
+        const response = await api.post('/auth/login', credentials);
+        // 2. Set user directly from login response (avoids a round-trip to /me)
+        if (response.data?.user) {
+            setUser(response.data.user);
+            setIsLoading(false);
+        } else {
+            // Fallback: fetch user details using the newly set cookie
+            await checkAuth();
+        }
     };
 
     const register = async (data: any) => {

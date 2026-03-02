@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g axios lodash moment decimal.js \
+    && curl -sL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb -o /tmp/wkhtmltopdf.deb \
+    && dpkg -i /tmp/wkhtmltopdf.deb \
+    && rm /tmp/wkhtmltopdf.deb \
     && docker-php-ext-configure gd --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \
@@ -42,6 +44,12 @@ RUN echo '<VirtualHost *:80>\n\
 
 # Copy existing app (mounted in docker-compose, so this is mostly for build)
 COPY . /var/www/html
+
+# Install sandbox npm dependencies
+RUN cd /var/www/html/scripts && npm install --omit=dev
+
+# Create secure storage for generated files (outside public/)
+RUN mkdir -p /var/www/html/var/generated && chown -R www-data:www-data /var/www/html/var && chmod 755 /var/www/html/var/generated
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html

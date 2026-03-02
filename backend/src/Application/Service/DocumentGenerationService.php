@@ -10,6 +10,7 @@ use App\Domain\Repository\DocumentGenerationRepositoryInterface;
 use App\Infrastructure\External\CodeExecution\JavaScriptSandboxService;
 use App\Infrastructure\External\TemplateRenderer\HandlebarsRenderer;
 use App\Infrastructure\External\PdfGeneration\SnappyPdfService;
+use App\Infrastructure\External\ReportGenerator\ExcelGeneratorService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -23,6 +24,7 @@ final class DocumentGenerationService
         private JavaScriptSandboxService $sandboxService,
         private HandlebarsRenderer $handlebarsRenderer,
         private SnappyPdfService $pdfService,
+        private ExcelGeneratorService $excelGeneratorService,
         private string $generatedFilesPath,
     ) {}
 
@@ -113,6 +115,28 @@ final class DocumentGenerationService
     public function getGeneration(int $id): ?DocumentGeneration
     {
         return $this->generationRepository->findById($id);
+    }
+
+    /**
+     * Retourne la dernière génération complétée d'un document si son fichier existe encore.
+     * Retourne null si aucune génération valide n'existe (il faudra en créer une nouvelle).
+     */
+    public function getCompletedGenerationForDocument(Document $document): ?DocumentGeneration
+    {
+        $generation = $this->generationRepository->findCompletedByDocument($document);
+
+        if ($generation === null) {
+            return null;
+        }
+
+        $filePath = $generation->getFilePath();
+        if ($filePath !== null && !file_exists($filePath)) {
+            // Le fichier a été supprimé manuellement : on supprime l'entrée obsolète
+            $this->generationRepository->deleteGeneration($generation);
+            return null;
+        }
+
+        return $generation;
     }
     /**
      * Exécute le workflow complet de génération de document
@@ -227,43 +251,69 @@ final class DocumentGenerationService
                 execution_logs: implode("\n", $logs)
             );
 
-            // 7. Rendu du Template
-            $logs[] = "Rendering template...";
-            try {
-                $html = $this->handlebarsRenderer->render($template->getContent(), $processedData);
-            } catch (\Exception $e) {
-                throw new \RuntimeException("Template rendering failed: " . $e->getMessage());
-            }
-            
-            $this->updateGenerationStatus(
-                $generation,
-                'processing',
-                rendered_output: $html,
-                execution_logs: implode("\n", $logs) . "\nTemplate rendered successfully.\n"
-            );
+            $outputFormat = $template->getOutputFormat();
+            $this->ensureOutputDir();
 
-            // 8. Génération du PDF (si format PDF)
-            if ($template->getOutputFormat() === 'pdf') {
+            // 7. Rendu et génération du fichier selon le format
+            $filePath = null;
+
+            if (in_array($outputFormat, ['pdf', 'html'], true)) {
+                // Rendu Handlebars → HTML → PDF
+                $logs[] = "Rendering HTML template...";
+                try {
+                    $html = $this->handlebarsRenderer->render($template->getContent(), $processedData);
+                } catch (\Exception $e) {
+                    throw new \RuntimeException("Template rendering failed: " . $e->getMessage());
+                }
+
+                $this->updateGenerationStatus(
+                    $generation,
+                    'processing',
+                    rendered_output: $html,
+                    execution_logs: implode("\n", $logs) . "\nTemplate rendered successfully.\n"
+                );
+
                 $logs[] = "Generating PDF...";
                 $fileName = sprintf('doc_%d_%s.pdf', $document->getId(), date('Ymd_His'));
                 $filePath = $this->generatedFilesPath . '/' . $fileName;
-                
-                if (!file_exists($this->generatedFilesPath)) {
-                    if (!mkdir($this->generatedFilesPath, 0777, true) && !is_dir($this->generatedFilesPath)) {
-                         throw new \RuntimeException(sprintf('Directory "%s" was not created', $this->generatedFilesPath));
-                    }
-                }
-
                 try {
                     $this->pdfService->generateFromHtml($html, $filePath);
                     $logs[] = "PDF generated at: $filePath";
                 } catch (\Exception $e) {
                     throw new \RuntimeException("PDF generation failed: " . $e->getMessage());
                 }
+
+            } elseif ($outputFormat === 'xlsx') {
+                // Génération Excel directement depuis les données traitées
+                $logs[] = "Generating XLSX...";
+                $fileName = sprintf('doc_%d_%s.xlsx', $document->getId(), date('Ymd_His'));
+                $filePath = $this->generatedFilesPath . '/' . $fileName;
+                try {
+                    $this->excelGeneratorService->generateFromData(
+                        is_array($processedData) ? $processedData : (array) $processedData,
+                        $filePath
+                    );
+                    $logs[] = "XLSX generated at: $filePath";
+                } catch (\Exception $e) {
+                    throw new \RuntimeException("XLSX generation failed: " . $e->getMessage());
+                }
+
+            } elseif ($outputFormat === 'txt') {
+                // Rendu Handlebars → fichier texte
+                $logs[] = "Rendering text template...";
+                try {
+                    $text = $this->handlebarsRenderer->render($template->getContent(), $processedData);
+                } catch (\Exception $e) {
+                    throw new \RuntimeException("Template rendering failed: " . $e->getMessage());
+                }
+
+                $fileName = sprintf('doc_%d_%s.txt', $document->getId(), date('Ymd_His'));
+                $filePath = $this->generatedFilesPath . '/' . $fileName;
+                file_put_contents($filePath, $text);
+                $logs[] = "TXT generated at: $filePath";
+
             } else {
-                // TODO: Autres formats
-                $filePath = null;
-                $logs[] = "Output generation skipped (only PDF supported in MVP).";
+                $logs[] = "Format '$outputFormat' non supporté, génération ignorée.";
             }
 
             // 9. Finalisation
@@ -286,6 +336,15 @@ final class DocumentGenerationService
             );
             // On ne relance pas l'exception pour que le contrôleur reçoive l'objet generation en erreur
             return $generation;
+        }
+    }
+
+    private function ensureOutputDir(): void
+    {
+        if (!is_dir($this->generatedFilesPath)) {
+            if (!mkdir($this->generatedFilesPath, 0777, true) && !is_dir($this->generatedFilesPath)) {
+                throw new \RuntimeException(sprintf('Directory "%s" could not be created', $this->generatedFilesPath));
+            }
         }
     }
 }

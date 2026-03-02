@@ -118,6 +118,35 @@
 
 .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.btn-download {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9px;
+    border: 1px solid #4a9f8e;
+    background: rgba(74,159,142,0.08);
+    color: #4a9f8e;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-start;
+}
+.btn-download:hover:not(:disabled) {
+    background: #4a9f8e;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(74,159,142,0.35);
+}
+.btn-download:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.build-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .gen-msg { font-size: 0.78rem; }
 .gen-msg.ok  { color: #4a9f8e; }
 .gen-msg.err { color: #e07b7b; }

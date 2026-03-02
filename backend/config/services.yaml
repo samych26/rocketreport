@@ -37,7 +37,7 @@ services:
     # --- Arguments for specific services ---
     App\Application\Service\DocumentGenerationService:
         arguments:
-            $generatedFilesPath: '%kernel.project_dir%/public/generated'
+            $generatedFilesPath: '%kernel.project_dir%/var/generated'
 
     App\Infrastructure\External\CodeExecution\JavaScriptSandboxService:
         arguments:

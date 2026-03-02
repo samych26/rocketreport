@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Plus, Hammer, Trash2, Pencil, Play, RefreshCw,
     ChevronRight, ChevronLeft, Check, Plug, FileCode,
-    Loader2, AlertCircle, CheckCircle2, Terminal,
+    Loader2, AlertCircle, CheckCircle2, Terminal, Download,
 } from 'lucide-react';
 import { buildService } from '../services/buildService';
 import type { Build, BuildPayload, PreviewResult, RunCodeResult } from '../services/buildService';
@@ -15,20 +15,17 @@ import './PlaceholderPage.css';
 import './BuildPage.css';
 
 /* ─── Default JS code ─── */
-const DEFAULT_CODE = `// apiData contient la réponse de l'API
-// Retournez l'objet de données à injecter dans le template
+const DEFAULT_CODE = `// "data" contient la réponse de l'API
+// Définissez la fonction processData et retournez l'objet à injecter dans le template
 
-function process(apiData) {
+function processData(data) {
     // Exemple : aplatir, filtrer, transformer...
     return {
         title: "Mon rapport",
         generated_at: new Date().toISOString(),
-        items: Array.isArray(apiData) ? apiData : [apiData],
+        items: Array.isArray(data) ? data : [data],
     };
-}
-
-// Ne pas modifier cette ligne
-module.exports = process(apiData);`;
+}`;
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -387,6 +384,8 @@ const BuildPage = () => {
     const [editing, setEditing]       = useState<Build | null>(null);
     const [generating, setGenerating] = useState<Record<number, boolean>>({});
     const [genMsg, setGenMsg]         = useState<Record<number, { ok: boolean; msg: string }>>({});
+    const [downloadUrls, setDownloadUrls] = useState<Record<number, string>>({});
+    const [downloading, setDownloading]   = useState<Record<number, boolean>>({});
 
     const load = async () => {
         setLoading(true);
@@ -433,14 +432,42 @@ const BuildPage = () => {
         setGenMsg(m => ({ ...m, [build.id]: { ok: true, msg: '' } }));
         try {
             const result = await buildService.generate(build.id);
-            setGenMsg(m => ({
-                ...m, [build.id]: { ok: true, msg: `Génération #${result.id} créée ✓` },
-            }));
+            const label = result.cached ? 'Rapport déjà généré ✓' : 'Rapport généré ✓';
+            setGenMsg(m => ({ ...m, [build.id]: { ok: true, msg: label } }));
+            if (result.download_url) {
+                setDownloadUrls(d => ({ ...d, [build.id]: result.download_url }));
+            }
         } catch (err: any) {
             const msg = err.response?.data?.error || err.response?.data?.message || 'Erreur lors de la génération';
             setGenMsg(m => ({ ...m, [build.id]: { ok: false, msg } }));
         } finally {
             setGenerating(g => ({ ...g, [build.id]: false }));
+        }
+    };
+
+    const handleDownload = async (buildId: number, buildName: string) => {
+        const url = downloadUrls[buildId];
+        if (!url) return;
+        setDownloading(d => ({ ...d, [buildId]: true }));
+        try {
+            const absoluteUrl = url.startsWith('http') ? url : `http://localhost:8000${url}`;
+            const res = await import('../services/api').then(m => m.default.get(absoluteUrl, { responseType: 'blob' }));
+            const blob = new Blob([res.data], { type: res.headers['content-type'] });
+            const ct   = res.headers['content-type'] ?? '';
+            const ext  = ct.includes('pdf') ? 'pdf'
+                       : ct.includes('spreadsheet') || ct.includes('excel') ? 'xlsx'
+                       : ct.includes('plain') ? 'txt'
+                       : ct.includes('html') ? 'html'
+                       : 'bin';
+            const link = document.createElement('a');
+            link.href  = URL.createObjectURL(blob);
+            link.download = `${buildName}.${ext}`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch {
+            alert('Erreur lors du téléchargement.');
+        } finally {
+            setDownloading(d => ({ ...d, [buildId]: false }));
         }
     };
 
@@ -521,11 +548,23 @@ const BuildPage = () => {
                                     <button
                                         className={`btn-generate ${generating[build.id] ? 'loading' : ''}`}
                                         onClick={() => handleGenerate(build)}
+                                        type="button"
                                         disabled={generating[build.id]}>
                                         {generating[build.id]
                                             ? <><Loader2 size={14} className="spin"/> Génération…</>
                                             : <><Play size={14}/> Lancer la génération</>}
                                     </button>
+                                    {downloadUrls[build.id] && (
+                                        <button
+                                            className="btn-download"
+                                            type="button"
+                                            onClick={() => handleDownload(build.id, build.name)}
+                                            disabled={downloading[build.id]}>
+                                            {downloading[build.id]
+                                                ? <><Loader2 size={14} className="spin"/> Téléchargement…</>
+                                                : <><Download size={14}/> Télécharger le rapport</>}
+                                        </button>
+                                    )}
                                     {genMsg[build.id]?.msg && (
                                         <span className={`gen-msg ${genMsg[build.id].ok ? 'ok' : 'err'}`}>
                                             {genMsg[build.id].msg}
