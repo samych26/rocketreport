@@ -133,10 +133,7 @@ const ApiSourceModal = ({ editing, onSave, onClose }: Props) => {
                                 placeholder={selectedAuth?.hint}
                                 value={authToken}
                                 onChange={e => setAuthToken(e.target.value)} />
-                            {!isEditing && (
-                                <span className="field-hint">Laissez vide pour ne pas modifier</span>
-                            )}
-                        </div>
+                            </div>
                     )}
 
                     {/* Custom headers */}

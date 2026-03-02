@@ -11,6 +11,7 @@ use App\Application\UseCase\Auth\RegisterUser;
 use App\Application\Service\TokenManagerInterface;
 use App\Domain\Repository\RefreshTokenRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Service\PasswordHasherInterface;
 use App\Domain\Service\RefreshTokenGeneratorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -30,6 +31,7 @@ class AuthController extends AbstractController
         private readonly RefreshTokenGeneratorInterface $refreshTokenGenerator,
         private readonly RefreshTokenRepositoryInterface $refreshTokenRepository,
         private readonly UserRepositoryInterface $userRepository,
+        private readonly PasswordHasherInterface $passwordHasher,
     ) {}
 
     #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
@@ -261,5 +263,87 @@ class AuthController extends AbstractController
                 'roles' => $user->getRoles(),
             ]
         ]);
+    }
+
+    #[Route('/profile', name: 'api_auth_profile', methods: ['GET', 'PATCH'])]
+    public function updateProfile(Request $request): JsonResponse
+    {
+        /** @var \App\Domain\Entity\User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if ($request->isMethod('GET')) {
+            return $this->json([
+                'user' => ['id' => $user->getId(), 'email' => $user->getEmail(), 'name' => $user->getName()],
+            ]);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $name = trim((string)($data['name'] ?? ''));
+
+        if ($name === '') {
+            return $this->json(['error' => 'Le nom est requis.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->setName($name);
+        $this->userRepository->save($user);
+
+        return $this->json([
+            'message' => 'Profil mis à jour.',
+            'user' => ['id' => $user->getId(), 'email' => $user->getEmail(), 'name' => $user->getName()],
+        ]);
+    }
+
+    #[Route('/change-password', name: 'api_auth_change_password', methods: ['POST'])]
+    public function changePassword(Request $request): JsonResponse
+    {
+        /** @var \App\Domain\Entity\User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $currentPassword = (string)($data['currentPassword'] ?? '');
+        $newPassword     = (string)($data['newPassword'] ?? '');
+
+        if (!$this->passwordHasher->isValid($user, $currentPassword)) {
+            return $this->json(['error' => 'Mot de passe actuel incorrect.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($newPassword) < 8) {
+            return $this->json(['error' => 'Le nouveau mot de passe doit faire au moins 8 caractères.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->setPassword($this->passwordHasher->hash($newPassword));
+        $this->userRepository->save($user);
+
+        return $this->json(['message' => 'Mot de passe modifié avec succès.']);
+    }
+
+    #[Route('/account', name: 'api_auth_delete_account', methods: ['DELETE'])]
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        /** @var \App\Domain\Entity\User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $em = $this->userRepository->find($user->getId());
+        // Use Doctrine EntityManager to remove
+        $doctrine = $this->container->get('doctrine');
+        $entityManager = $doctrine->getManager();
+        $entityManager->remove($user);
+        $entityManager->flush();
+
+        $response = $this->json(['message' => 'Compte supprimé.']);
+        $isProduction = $this->getParameter('kernel.environment') === 'prod';
+        $response->headers->clearCookie('rr_access', '/', null, $isProduction, true);
+        $response->headers->clearCookie('rr_refresh', '/', null, $isProduction, true);
+
+        return $response;
     }
 }

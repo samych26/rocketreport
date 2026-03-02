@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Plus, Hammer, Trash2, Pencil, Play, RefreshCw,
     ChevronRight, ChevronLeft, Check, Plug, FileCode,
-    Loader2, AlertCircle, CheckCircle2, Terminal, Download,
+    Loader2, AlertCircle, CheckCircle2, Terminal,
 } from 'lucide-react';
 import { buildService } from '../services/buildService';
 import type { Build, BuildPayload, PreviewResult, RunCodeResult } from '../services/buildService';
@@ -14,18 +14,47 @@ import MainLayout from '../layouts/MainLayout';
 import './PlaceholderPage.css';
 import './BuildPage.css';
 
-/* ─── Default JS code ─── */
-const DEFAULT_CODE = `// "data" contient la réponse de l'API
-// Définissez la fonction processData et retournez l'objet à injecter dans le template
+type Language = 'javascript' | 'typescript' | 'python';
+
+const DEFAULT_CODE: Record<Language, string> = {
+    javascript: `// "data" contient la réponse de l'API
+// Définissez processData et retournez l'objet à injecter dans le template
 
 function processData(data) {
-    // Exemple : aplatir, filtrer, transformer...
     return {
         title: "Mon rapport",
         generated_at: new Date().toISOString(),
         items: Array.isArray(data) ? data : [data],
     };
-}`;
+}`,
+    typescript: `// TypeScript — les types sont optionnels
+
+function processData(data: any): Record<string, any> {
+    const items: any[] = Array.isArray(data) ? data : [data];
+    return {
+        title: "Mon rapport",
+        generated_at: new Date().toISOString(),
+        count: items.length,
+        items,
+    };
+}`,
+    python: `# "data" contient la réponse de l'API
+# Définissez process_data(data) et retournez le dict à injecter
+
+def process_data(data):
+    items = data if isinstance(data, list) else [data]
+    return {
+        "title": "Mon rapport",
+        "count": len(items),
+        "items": items,
+    }`,
+};
+
+const LANG_OPTIONS: { value: Language; label: string; hint: string }[] = [
+    { value: 'javascript', label: 'JavaScript', hint: 'Définissez processData(data)' },
+    { value: 'typescript', label: 'TypeScript', hint: 'Définissez processData(data: any)' },
+    { value: 'python',     label: 'Python',     hint: 'Définissez process_data(data)' },
+];
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -52,9 +81,16 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
     const [fetching, setFetching]       = useState(false);
 
     /* Step 2 — Code */
-    const [code, setCode]               = useState(editing?.code ?? DEFAULT_CODE);
+    const [language, setLanguage]       = useState<Language>('javascript');
+    const [code, setCode]               = useState(editing?.code ?? DEFAULT_CODE['javascript']);
     const [codeResult, setCodeResult]   = useState<RunCodeResult | null>(null);
     const [running, setRunning]         = useState(false);
+
+    const handleLangChange = (lang: Language) => {
+        if (code === DEFAULT_CODE[language]) setCode(DEFAULT_CODE[lang]);
+        setLanguage(lang);
+        setCodeResult(null);
+    };
 
     /* Step 3 — Template */
     const [templateId, setTemplateId]   = useState<number | null>(editing?.template?.id ?? null);
@@ -88,7 +124,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
         setCodeResult(null);
         try {
             const inputData = preview?.data ?? {};
-            const result = await buildService.runCode(code, inputData);
+            const result = await buildService.runCode(code, inputData, language);
             setCodeResult(result);
         } catch {
             setCodeResult({ success: false, error: 'Erreur réseau' });
@@ -110,7 +146,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
             await onSave({
                 name, description: description || undefined,
                 api_source_id: sourceId, endpoint, method,
-                code, template_id: templateId ?? undefined,
+                code, language, template_id: templateId ?? undefined,
             }, editing?.id);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Erreur lors de la sauvegarde.');
@@ -134,14 +170,13 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
     ];
 
     return (
-        <div className="wizard-overlay">
-            <div className="wizard-panel">
-                {/* Header */}
-                <div className="wizard-header">
-                    <div className="wizard-title">
-                        <Hammer size={20} />
-                        <h2>{isEditing ? 'Modifier le build' : 'Nouveau build'}</h2>
-                    </div>
+        <div className="wizard-panel">
+            {/* Header */}
+            <div className="wizard-header">
+                <div className="wizard-title">
+                    <Hammer size={20} />
+                    <h2>{isEditing ? 'Modifier le build' : 'Nouveau build'}</h2>
+                </div>
                     {/* Stepper */}
                     <div className="wizard-stepper">
                         {STEPS.map(({ n, label }, i) => (
@@ -224,9 +259,19 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
                         <div className="wizard-step wizard-step--code">
                             <div className="code-pane">
                                 <div className="code-pane-header">
-                                    <Terminal size={14} /> Transformation JavaScript
+                                    <Terminal size={14} />
+                                    {/* Language selector */}
+                                    <div className="lang-tabs">
+                                        {LANG_OPTIONS.map(l => (
+                                            <button
+                                                key={l.value}
+                                                className={`lang-tab ${language === l.value ? 'active' : ''}`}
+                                                onClick={() => handleLangChange(l.value)}
+                                            >{l.label}</button>
+                                        ))}
+                                    </div>
                                     <span className="code-hint">
-                                        Variable disponible : <code>apiData</code> — retournez l'objet de données pour le template
+                                        {LANG_OPTIONS.find(l => l.value === language)?.hint}
                                     </span>
                                     <button className="btn-run" onClick={runCode} disabled={running}>
                                         {running ? <Loader2 size={13} className="spin" /> : <><Play size={13}/> Exécuter</>}
@@ -335,6 +380,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
                                 </div>
                                 <div className="summary-row">
                                     <Terminal size={14}/> <strong>Code :</strong> {code.split('\n').length} lignes
+                                    <span className={`lang-badge lang-${language}`}>{language.toUpperCase()}</span>
                                 </div>
                                 <div className="summary-row">
                                     <FileCode size={14}/> <strong>Template :</strong>{' '}
@@ -367,7 +413,6 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
                     </div>
                 </div>
             </div>
-        </div>
     );
 };
 
@@ -382,10 +427,6 @@ const BuildPage = () => {
     const [error, setError]           = useState('');
     const [showWizard, setShowWizard] = useState(false);
     const [editing, setEditing]       = useState<Build | null>(null);
-    const [generating, setGenerating] = useState<Record<number, boolean>>({});
-    const [genMsg, setGenMsg]         = useState<Record<number, { ok: boolean; msg: string }>>({});
-    const [downloadUrls, setDownloadUrls] = useState<Record<number, string>>({});
-    const [downloading, setDownloading]   = useState<Record<number, boolean>>({});
 
     const load = async () => {
         setLoading(true);
@@ -422,170 +463,112 @@ const BuildPage = () => {
         try {
             await buildService.delete(build.id);
             setBuilds(b => b.filter(x => x.id !== build.id));
+            if (editing?.id === build.id) { setShowWizard(false); setEditing(null); }
         } catch {
             alert('Erreur lors de la suppression.');
         }
     };
 
-    const handleGenerate = async (build: Build) => {
-        setGenerating(g => ({ ...g, [build.id]: true }));
-        setGenMsg(m => ({ ...m, [build.id]: { ok: true, msg: '' } }));
-        try {
-            const result = await buildService.generate(build.id);
-            const label = result.cached ? 'Rapport déjà généré ✓' : 'Rapport généré ✓';
-            setGenMsg(m => ({ ...m, [build.id]: { ok: true, msg: label } }));
-            if (result.download_url) {
-                setDownloadUrls(d => ({ ...d, [build.id]: result.download_url }));
-            }
-        } catch (err: any) {
-            const msg = err.response?.data?.error || err.response?.data?.message || 'Erreur lors de la génération';
-            setGenMsg(m => ({ ...m, [build.id]: { ok: false, msg } }));
-        } finally {
-            setGenerating(g => ({ ...g, [build.id]: false }));
-        }
-    };
-
-    const handleDownload = async (buildId: number, buildName: string) => {
-        const url = downloadUrls[buildId];
-        if (!url) return;
-        setDownloading(d => ({ ...d, [buildId]: true }));
-        try {
-            const absoluteUrl = url.startsWith('http') ? url : `http://localhost:8000${url}`;
-            const res = await import('../services/api').then(m => m.default.get(absoluteUrl, { responseType: 'blob' }));
-            const blob = new Blob([res.data], { type: res.headers['content-type'] });
-            const ct   = res.headers['content-type'] ?? '';
-            const ext  = ct.includes('pdf') ? 'pdf'
-                       : ct.includes('spreadsheet') || ct.includes('excel') ? 'xlsx'
-                       : ct.includes('plain') ? 'txt'
-                       : ct.includes('html') ? 'html'
-                       : 'bin';
-            const link = document.createElement('a');
-            link.href  = URL.createObjectURL(blob);
-            link.download = `${buildName}.${ext}`;
-            link.click();
-            URL.revokeObjectURL(link.href);
-        } catch {
-            alert('Erreur lors du téléchargement.');
-        } finally {
-            setDownloading(d => ({ ...d, [buildId]: false }));
-        }
-    };
+    const openCreate  = () => { setEditing(null); setShowWizard(true); };
+    const openEdit    = (b: Build) => { setEditing(b); setShowWizard(true); };
+    const closeWizard = () => { setShowWizard(false); setEditing(null); };
 
     return (
         <MainLayout>
-            <div className="page-container">
-                <div className="page-header">
-                    <div>
-                        <div className="page-title">
-                            <Hammer size={22} strokeWidth={1.8}/>
-                            <h1>Builds</h1>
+            <div className={`build-workspace ${showWizard ? 'build-workspace--split' : ''}`}>
+
+                {/* ── Left : builds list ── */}
+                <div className="build-list-col">
+                    <div className="page-header">
+                        <div>
+                            <div className="page-title">
+                                <Hammer size={22} strokeWidth={1.8}/>
+                                <h1>Builds</h1>
+                            </div>
+                            <p className="page-subtitle">
+                                Configurez vos pipelines : source API → transformation → template
+                            </p>
                         </div>
-                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                            Configurez vos pipelines : source API → transformation → template
-                        </p>
+                        <div className="page-header-actions">
+                            <button className="btn-icon" onClick={load} title="Rafraîchir"><RefreshCw size={16}/></button>
+                            <button className="btn-primary-action" onClick={openCreate}>
+                                <Plus size={16}/> Nouveau build
+                            </button>
+                        </div>
                     </div>
-                    <div className="page-header-actions">
-                        <button className="btn-icon" onClick={load} title="Rafraîchir"><RefreshCw size={16}/></button>
-                        <button className="btn-primary-action" onClick={() => { setEditing(null); setShowWizard(true); }}>
-                            <Plus size={16}/> Nouveau build
-                        </button>
-                    </div>
+
+                    {error && <div className="page-error">{error}</div>}
+
+                    {loading ? (
+                        <div className="build-grid">
+                            {[1,2,3].map(i => <div key={i} className="skeleton-card" />)}
+                        </div>
+                    ) : builds.length === 0 ? (
+                        <div className="page-empty">
+                            <Hammer size={48} strokeWidth={1} className="empty-icon"/>
+                            <h3>Aucun build</h3>
+                            <p>Créez votre premier build pour connecter une source API à un template.</p>
+                            <button className="btn-primary-action" onClick={openCreate}>
+                                <Plus size={16}/> Créer un build
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="build-grid">
+                            {builds.map(build => (
+                                <div key={build.id}
+                                     className={`build-card ${editing?.id === build.id ? 'build-card--active' : ''}`}>
+                                    <div className="build-card-header">
+                                        <div className="build-card-title">{build.name}</div>
+                                        <div className="build-card-actions">
+                                            <button className="tpl-action-btn"
+                                                    onClick={() => openEdit(build)} title="Modifier">
+                                                <Pencil size={13}/>
+                                            </button>
+                                            <button className="tpl-action-btn tpl-action-btn--danger"
+                                                    onClick={() => handleDelete(build)} title="Supprimer">
+                                                <Trash2 size={13}/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="build-card-body">
+                                        <div className="build-meta-row">
+                                            <Plug size={13}/>
+                                            <span>{build.api_source.name}</span>
+                                            <code className="build-method">{build.method}</code>
+                                            <code className="build-endpoint">/{build.endpoint}</code>
+                                        </div>
+                                        {build.template && (
+                                            <div className="build-meta-row">
+                                                <FileCode size={13}/>
+                                                <span>{build.template.name}</span>
+                                                <span className={`format-pill format-${build.template.format}`}>
+                                                    {build.template.format.toUpperCase()}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {build.description && (
+                                            <p className="build-desc">{build.description}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {error && <div className="page-error">{error}</div>}
-
-                {loading ? (
-                    <div className="build-grid">
-                        {[1,2,3].map(i => <div key={i} className="skeleton-card" />)}
-                    </div>
-                ) : builds.length === 0 ? (
-                    <div className="page-empty">
-                        <Hammer size={48} strokeWidth={1} className="empty-icon"/>
-                        <h3>Aucun build</h3>
-                        <p>Créez votre premier build pour connecter une source API à un template.</p>
-                        <button className="btn-primary-action" onClick={() => setShowWizard(true)}>
-                            <Plus size={16}/> Créer un build
-                        </button>
-                    </div>
-                ) : (
-                    <div className="build-grid">
-                        {builds.map(build => (
-                            <div key={build.id} className="build-card">
-                                <div className="build-card-header">
-                                    <div className="build-card-title">{build.name}</div>
-                                    <div className="build-card-actions">
-                                        <button className="tpl-action-btn" onClick={() => { setEditing(build); setShowWizard(true); }} title="Modifier">
-                                            <Pencil size={13}/>
-                                        </button>
-                                        <button className="tpl-action-btn tpl-action-btn--danger" onClick={() => handleDelete(build)} title="Supprimer">
-                                            <Trash2 size={13}/>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="build-card-body">
-                                    <div className="build-meta-row">
-                                        <Plug size={13}/>
-                                        <span>{build.api_source.name}</span>
-                                        <code className="build-method">{build.method}</code>
-                                        <code className="build-endpoint">/{build.endpoint}</code>
-                                    </div>
-
-                                    {build.template && (
-                                        <div className="build-meta-row">
-                                            <FileCode size={13}/>
-                                            <span>{build.template.name}</span>
-                                            <span className={`format-pill format-${build.template.format}`}>{build.template.format.toUpperCase()}</span>
-                                        </div>
-                                    )}
-
-                                    {build.description && (
-                                        <p className="build-desc">{build.description}</p>
-                                    )}
-                                </div>
-
-                                <div className="build-card-footer">
-                                    <button
-                                        className={`btn-generate ${generating[build.id] ? 'loading' : ''}`}
-                                        onClick={() => handleGenerate(build)}
-                                        type="button"
-                                        disabled={generating[build.id]}>
-                                        {generating[build.id]
-                                            ? <><Loader2 size={14} className="spin"/> Génération…</>
-                                            : <><Play size={14}/> Lancer la génération</>}
-                                    </button>
-                                    {downloadUrls[build.id] && (
-                                        <button
-                                            className="btn-download"
-                                            type="button"
-                                            onClick={() => handleDownload(build.id, build.name)}
-                                            disabled={downloading[build.id]}>
-                                            {downloading[build.id]
-                                                ? <><Loader2 size={14} className="spin"/> Téléchargement…</>
-                                                : <><Download size={14}/> Télécharger le rapport</>}
-                                        </button>
-                                    )}
-                                    {genMsg[build.id]?.msg && (
-                                        <span className={`gen-msg ${genMsg[build.id].ok ? 'ok' : 'err'}`}>
-                                            {genMsg[build.id].msg}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                {/* ── Right : inline wizard ── */}
+                {showWizard && (
+                    <div className="build-wizard-col">
+                        <BuildWizard
+                            editing={editing}
+                            apiSources={apiSources}
+                            templates={templates}
+                            onSave={handleSave}
+                            onCancel={closeWizard}
+                        />
                     </div>
                 )}
             </div>
-
-            {showWizard && (
-                <BuildWizard
-                    editing={editing}
-                    apiSources={apiSources}
-                    templates={templates}
-                    onSave={handleSave}
-                    onCancel={() => { setShowWizard(false); setEditing(null); }}
-                />
-            )}
         </MainLayout>
     );
 };

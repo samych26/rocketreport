@@ -12,10 +12,12 @@ type TestState = 'idle' | 'loading' | 'ok' | 'error';
 
 const AUTH_LABELS: Record<string, string> = {
     none:    'Aucune auth',
-    bearer:  'Bearer',
-    api_key: 'API Key',
-    basic:   'Basic',
+    bearer:  'Bearer Token',
+    api_key: 'Clé API',
+    basic:   'Basic Auth',
 };
+
+
 
 const ApiSourcesPage = () => {
     const [sources, setSources]       = useState<ApiSource[]>([]);

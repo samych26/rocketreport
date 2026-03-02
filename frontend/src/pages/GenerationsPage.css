@@ -1,0 +1,197 @@
+/* ── Page layout ── */
+.gen-loading {
+    display: flex;
+    justify-content: center;
+    padding: 4rem;
+    color: var(--text-secondary);
+}
+
+.gen-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ── Build card ── */
+.gen-build-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+.gen-build-card:hover {
+    border-color: var(--accent-color);
+}
+
+.gen-build-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    flex-wrap: wrap;
+}
+
+.gen-build-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.gen-build-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.gen-build-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.gen-build-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ── Inline message ── */
+.gen-inline-msg {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border-top: 1px solid var(--border-color);
+}
+.gen-inline-msg.ok  { color: #4ade80; background: rgba(74,222,128,0.06); }
+.gen-inline-msg.err { color: #f87171; background: rgba(248,113,113,0.06); }
+
+/* ── History panel ── */
+.gen-history {
+    border-top: 1px solid var(--border-color);
+    padding: 0.75rem 1.25rem 1rem;
+    background: var(--bg-primary);
+}
+
+.gen-history-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.btn-icon-sm {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+.btn-icon-sm:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+.gen-history-loading {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.gen-history-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 1rem 0;
+    margin: 0;
+}
+
+/* ── Table ── */
+.gen-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+
+.gen-table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.gen-table td {
+    padding: 0.55rem 0.6rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.gen-table tr:last-child td { border-bottom: none; }
+
+.gen-td-id {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    width: 40px;
+}
+
+/* ── Status badge ── */
+.gen-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+}
+.gen-status--success { background: rgba(74,222,128,0.12);  color: #4ade80; }
+.gen-status--failed  { background: rgba(248,113,113,0.12); color: #f87171; }
+.gen-status--pending { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+
+/* ── Download button (table) ── */
+.btn-download-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 8px;
+    color: #818cf8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.btn-download-sm:hover:not(:disabled) {
+    background: rgba(99,102,241,0.22);
+    border-color: rgba(99,102,241,0.55);
+}
+.btn-download-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.gen-error-msg {
+    font-size: 0.78rem;
+    color: #f87171;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

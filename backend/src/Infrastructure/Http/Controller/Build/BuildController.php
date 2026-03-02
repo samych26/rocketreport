@@ -208,7 +208,7 @@ final class BuildController extends AbstractController
         if (empty($data['code'])) {
             return $this->json(['error' => 'code est requis.'], Response::HTTP_BAD_REQUEST);
         }
-        $result = $this->sandboxService->test($data['code'], $data['data'] ?? []);
+        $result = $this->sandboxService->test($data['code'], $data['data'] ?? [], $data['language'] ?? 'javascript');
         return $this->json($result);
     }
 

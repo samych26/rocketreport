@@ -23,6 +23,7 @@ export interface BuildPayload {
     endpoint: string;
     method: string;
     code: string;
+    language?: string;
     template_id?: number | null;
 }
 
@@ -73,8 +74,8 @@ export const buildService = {
         return res.data;
     },
 
-    runCode: async (code: string, data: any): Promise<RunCodeResult> => {
-        const res = await api.post('/builds/run-code', { code, data });
+    runCode: async (code: string, data: any, language = 'javascript'): Promise<RunCodeResult> => {
+        const res = await api.post('/builds/run-code', { code, data, language });
         return res.data;
     },
 

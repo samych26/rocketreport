@@ -1,4 +1,5 @@
 import { Globe, Sun, Moon, Settings, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
@@ -9,6 +10,7 @@ const Navbar = () => {
     const { theme, toggleTheme } = useTheme();
     const { language, setLanguage, t } = useLanguage();
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     return (
         <header className="navbar">
@@ -42,7 +44,7 @@ const Navbar = () => {
                 </button>
 
                 {/* Settings */}
-                <button className="navbar-icon-btn" aria-label="Settings" title="Paramètres">
+                <button className="navbar-icon-btn" aria-label="Settings" title="Paramètres" onClick={() => navigate('/settings')}>
                     <Settings size={18} />
                 </button>
 
