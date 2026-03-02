@@ -18,6 +18,8 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -32,6 +34,7 @@ class AuthController extends AbstractController
         private readonly RefreshTokenRepositoryInterface $refreshTokenRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly PasswordHasherInterface $passwordHasher,
+        private readonly MailerInterface $mailer,
     ) {}
 
     #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
@@ -345,5 +348,84 @@ class AuthController extends AbstractController
         $response->headers->clearCookie('rr_refresh', '/', null, $isProduction, true);
 
         return $response;
+    }
+
+    #[Route('/forgot-password', name: 'api_auth_forgot_password', methods: ['POST'])]
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true) ?? [];
+        $email = trim((string)($data['email'] ?? ''));
+
+        if ($email === '') {
+            return $this->json(['error' => 'Email requis.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->userRepository->findByEmail($email);
+
+        // Toujours retourner 200 pour ne pas révéler si l'email existe
+        if (!$user) {
+            return $this->json(['message' => 'Si cet email existe, un lien de réinitialisation a été envoyé.']);
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $user->setResetToken($token);
+        $user->setResetTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
+        $this->userRepository->save($user);
+
+        $frontendUrl = $this->getParameter('kernel.environment') === 'prod'
+            ? 'https://your-app.com'
+            : 'http://localhost:5173';
+
+        $resetUrl = "{$frontendUrl}/reset-password?token={$token}";
+
+        $emailMessage = (new Email())
+            ->from('no-reply@rocketreport.io')
+            ->to($user->getEmail())
+            ->subject('Réinitialisation de votre mot de passe RocketReport')
+            ->html("
+                <h2>Réinitialisation du mot de passe</h2>
+                <p>Bonjour {$user->getName()},</p>
+                <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
+                <p><a href=\"{$resetUrl}\" style=\"background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;\">Réinitialiser mon mot de passe</a></p>
+                <p>Ce lien expire dans <strong>1 heure</strong>.</p>
+                <p>Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+            ");
+
+        $this->mailer->send($emailMessage);
+
+        return $this->json(['message' => 'Si cet email existe, un lien de réinitialisation a été envoyé.']);
+    }
+
+    #[Route('/reset-password', name: 'api_auth_reset_password', methods: ['POST'])]
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true) ?? [];
+        $token = trim((string)($data['token'] ?? ''));
+        $newPassword = (string)($data['password'] ?? '');
+
+        if ($token === '' || $newPassword === '') {
+            return $this->json(['error' => 'Token et mot de passe requis.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (strlen($newPassword) < 8) {
+            return $this->json(['error' => 'Le mot de passe doit faire au moins 8 caractères.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->userRepository->findByResetToken($token);
+
+        if (!$user) {
+            return $this->json(['error' => 'Token invalide ou expiré.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($user->getResetTokenExpiresAt() < new \DateTimeImmutable()) {
+            return $this->json(['error' => 'Ce lien a expiré. Veuillez faire une nouvelle demande.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->setPassword($this->passwordHasher->hash($newPassword));
+        $user->setResetToken(null);
+        $user->setResetTokenExpiresAt(null);
+        $this->userRepository->save($user);
+
+        return $this->json(['message' => 'Mot de passe réinitialisé avec succès.']);
     }
 }

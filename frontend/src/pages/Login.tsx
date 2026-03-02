@@ -57,7 +57,7 @@ const Login = () => {
                 <div className="form-group">
                     <div className="form-label-row">
                         <label htmlFor="password" className="form-label">{t('password_label')}</label>
-                        <a href="#" className="forgot-password-link">{t('forgot_password')}</a>
+                        <Link to="/forgot-password" className="forgot-password-link">{t('forgot_password')}</Link>
                     </div>
                     <input
                         type="password"

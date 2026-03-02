@@ -12,6 +12,8 @@ import ApiSourcesPage from './pages/ApiSourcesPage';
 import BuildPage from './pages/BuildPage';
 import GenerationsPage from './pages/GenerationsPage';
 import SettingsPage from './pages/SettingsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import './App.css';
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
               <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
               <Route path="/generations" element={<ProtectedRoute><GenerationsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
             </Routes>
           </Router>
         </AuthProvider>

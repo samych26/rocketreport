@@ -28,5 +28,10 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
     {
         return $this->findOneBy(['email' => $email]);
     }
+
+    public function findByResetToken(string $token): ?User
+    {
+        return $this->findOneBy(['resetToken' => $token]);
+    }
 }
 

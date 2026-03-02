@@ -32,6 +32,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private ?string $resetToken = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $resetTokenExpiresAt = null;
+
     public function __construct(
         string $email,
         string $password,
@@ -109,4 +115,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // Si vous stockez des données sensibles temporaires, nettoyez-les ici
     }
+
+    public function getResetToken(): ?string { return $this->resetToken; }
+    public function setResetToken(?string $token): self { $this->resetToken = $token; return $this; }
+    public function getResetTokenExpiresAt(): ?\DateTimeImmutable { return $this->resetTokenExpiresAt; }
+    public function setResetTokenExpiresAt(?\DateTimeImmutable $dt): self { $this->resetTokenExpiresAt = $dt; return $this; }
 }
