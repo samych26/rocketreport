@@ -11,6 +11,7 @@
         "doctrine/doctrine-bundle": "^2.18",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6",
+        "easycorp/easyadmin-bundle": "^5.0",
         "guzzlehttp/guzzle": "^7.10",
         "knplabs/knp-snappy": "^1.5",
         "lexik/jwt-authentication-bundle": "^3.2",

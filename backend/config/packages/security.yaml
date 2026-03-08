@@ -19,6 +19,21 @@ security:
             pattern: ^/api/auth/(register|login|refresh|forgot-password|reset-password|verify-email|google)
             stateless: true
             security: false
+
+        # Admin firewall — session-based, requires ROLE_ADMIN
+        admin:
+            pattern: ^/admin
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: admin_login
+                check_path: admin_login
+                default_target_path: admin
+                username_parameter: email
+                password_parameter: password
+            logout:
+                path: admin_logout
+                target: admin_login
         
         # Main firewall for protected API routes
         main:
@@ -29,9 +44,10 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # Authentication routes are handled by the 'auth' firewall (no auth required)
+        - { path: ^/admin/login, roles: PUBLIC_ACCESS }
+        - { path: ^/admin,       roles: ROLE_ADMIN }
         # All other /api routes require ROLE_USER
-        - { path: ^/api, roles: ROLE_USER }
+        - { path: ^/api,         roles: ROLE_USER }
 
 when@test:
     security:
