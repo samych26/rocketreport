@@ -28,7 +28,8 @@ export const generationService = {
     },
 
     downloadByUrl: async (url: string): Promise<{ blob: Blob; contentType: string }> => {
-        const absoluteUrl = url.startsWith('http') ? url : `http://localhost:8000${url}`;
+        const base = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api').replace(/\/api$/, '');
+        const absoluteUrl = url.startsWith('http') ? url : `${base}${url}`;
         const res = await api.get(absoluteUrl, { responseType: 'blob' });
         return { blob: res.data, contentType: res.headers['content-type'] ?? '' };
     },

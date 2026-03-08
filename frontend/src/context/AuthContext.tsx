@@ -32,9 +32,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (response.data?.user) {
                 setUser(response.data.user);
             }
-        } catch (error) {
-            // User is not authenticated or token expired, that's fine.
-            console.log('Not authenticated on load');
+        } catch {
+            // Not authenticated on load, that's fine
         } finally {
             setIsLoading(false);
         }
@@ -71,8 +70,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             // 1. Tell backend to clear the HttpOnly cookie
             await api.post('/auth/logout');
-        } catch (error) {
-            console.error('Logout failed on backend, clearing local state anyway', error);
+        } catch {
+            // Backend unavailable, clear local state anyway
         } finally {
             // 2. Clear frontend state
             setUser(null);

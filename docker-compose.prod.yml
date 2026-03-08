@@ -1,0 +1,73 @@
+version: '3.8'
+
+# Production docker-compose — copier .env.prod en .env avant de lancer
+# docker compose -f docker-compose.prod.yml up -d
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: rocketreport-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-rocket_report}
+      MYSQL_USER: ${MYSQL_USER:-rocketreport}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    expose:
+      - "3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - rocketreport-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_PASSWORD}"]
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: rocketreport-redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - rocketreport-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: rocketreport-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8000:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql://${MYSQL_USER:-rocketreport}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-rocket_report}?serverVersion=8.0.32&charset=utf8mb4"
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      APP_ENV: prod
+      APP_DEBUG: "0"
+    volumes:
+      - ./backend:/var/www/html
+      - /var/www/html/var
+    networks:
+      - rocketreport-network
+
+volumes:
+  db_data:
+  redis_data:
+
+networks:
+  rocketreport-network:
+    driver: bridge
