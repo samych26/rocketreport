@@ -15,6 +15,7 @@ interface AuthContextType {
     login: (credentials: any) => Promise<void>;
     register: (data: any) => Promise<void>;
     logout: () => Promise<void>;
+    loginWithUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,10 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const register = async (data: any) => {
-        // 1. Create the user
         await api.post('/auth/register', data);
-        // 2. Automatically log them in (if the backend doesn't already do it)
-        await login({ email: data.email, password: data.password });
+        // Do NOT auto-login — user must verify their email first
+    };
+
+    const loginWithUser = (userData: User) => {
+        setUser(userData);
+        setIsLoading(false);
     };
 
     const logout = async () => {
@@ -82,7 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             isLoading,
             login,
             register,
-            logout
+            logout,
+            loginWithUser,
         }}>
             {children}
         </AuthContext.Provider>

@@ -3,6 +3,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import './ForgotPasswordPage.css';
 
+const passwordRules = [
+    { id: 'length',  label: '8 caractères minimum',  test: (p: string) => p.length >= 8 },
+    { id: 'upper',   label: '1 majuscule',            test: (p: string) => /[A-Z]/.test(p) },
+    { id: 'number',  label: '1 chiffre',              test: (p: string) => /[0-9]/.test(p) },
+    { id: 'special', label: '1 caractère spécial',    test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
 const ResetPasswordPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -22,10 +29,8 @@ const ResetPasswordPage = () => {
             setError('Les mots de passe ne correspondent pas.');
             return;
         }
-        if (password.length < 8) {
-            setError('Le mot de passe doit faire au moins 8 caractères.');
-            return;
-        }
+        const failed = passwordRules.find(r => !r.test(password));
+        if (failed) { setError(`Le mot de passe doit contenir ${failed.label.toLowerCase()}.`); return; }
 
         setIsLoading(true);
         try {
@@ -83,7 +88,16 @@ const ResetPasswordPage = () => {
                                 required
                                 disabled={isLoading}
                             />
-                            <p className="fp-password-hint">Minimum 8 caractères</p>
+                            {password.length > 0 && (
+                                <ul className="fc-pwd-rules" style={{ marginTop: '0.5rem' }}>
+                                    {passwordRules.map(rule => (
+                                        <li key={rule.id} className={rule.test(password) ? 'fc-pwd-rule--ok' : 'fc-pwd-rule--ko'}>
+                                            <span className="fc-pwd-rule-icon">{rule.test(password) ? '✓' : '✗'}</span>
+                                            {rule.label}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
 
                         <div>

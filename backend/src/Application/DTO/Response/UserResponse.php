@@ -14,6 +14,7 @@ class UserResponse
         public readonly string $name,
         public readonly array $roles,
         public readonly \DateTimeImmutable $createdAt,
+        public readonly bool $emailVerified,
     ) {
     }
 
@@ -25,6 +26,7 @@ class UserResponse
             name: $user->getName(),
             roles: $user->getRoles(),
             createdAt: $user->getCreatedAt(),
+            emailVerified: $user->isEmailVerified(),
         );
     }
 }

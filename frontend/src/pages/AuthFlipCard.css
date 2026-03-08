@@ -1,12 +1,13 @@
 /* ================================================================
-   FLIP CARD AUTH — dark theme, Poppins
+   FLIP CARD AUTH — responsive + theme-aware
    ================================================================ */
 
 .fc-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #04040b;
+  background: var(--bg-primary);
   font-family: 'Poppins', system-ui, sans-serif;
 }
 
@@ -17,8 +18,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
-  gap: 2rem;
+  padding: 1.5rem 1rem 2rem;
+  gap: 1.25rem;
 }
 
 /* ================================================================
@@ -33,38 +34,36 @@
 .fc-tab {
   font-size: 0.95rem;
   font-weight: 600;
-  color: rgba(255,255,255,0.35);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: color 0.3s;
   user-select: none;
   letter-spacing: 0.01em;
 }
 .fc-tab--active {
-  color: #fff;
+  color: var(--text-primary);
   text-decoration: underline;
   text-underline-offset: 4px;
   text-decoration-color: #6366f1;
 }
 
-/* The toggle itself */
 .fc-switch {
   position: relative;
   width: 52px;
   height: 26px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 .fc-switch input { opacity: 0; width: 0; height: 0; }
 
 .fc-slider {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.08);
-  border: 1.5px solid rgba(255,255,255,0.18);
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
   border-radius: 999px;
   transition: background 0.3s, border-color 0.3s;
-  box-shadow: 0 0 12px rgba(99,102,241,0.2);
 }
-
 .fc-slider::before {
   content: '';
   position: absolute;
@@ -73,153 +72,366 @@
   left: 3px;
   top: 50%;
   transform: translateY(-50%);
-  background: #fff;
+  background: var(--text-primary);
   border-radius: 50%;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-
 .fc-switch input:checked + .fc-slider {
   background: #6366f1;
   border-color: #6366f1;
-  box-shadow: 0 0 20px rgba(99,102,241,0.5);
+  box-shadow: 0 0 16px rgba(99,102,241,0.4);
 }
 .fc-switch input:checked + .fc-slider::before {
   transform: translateY(-50%) translateX(26px);
+  background: #fff;
 }
 
 /* ================================================================
-   FLIP CARD
+   FLIP CARD CONTAINER
    ================================================================ */
 .fc-inner {
-  width: min(420px, 92vw);
-  /* tall enough for the register form */
-  height: 560px;
+  width: min(440px, 94vw);
+  /* No fixed height — let content define it */
   position: relative;
   perspective: 1200px;
-  transform-style: preserve-3d;
-  transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Reserve space for both faces with grid stacking trick */
+  display: grid;
 }
-.fc-inner--flipped { transform: rotateY(180deg); }
 
-/* Both faces share these rules */
+.fc-inner--flipped .fc-face--front  { visibility: hidden; pointer-events: none; }
+.fc-inner--flipped .fc-face--back   { visibility: visible; pointer-events: auto; }
+.fc-inner:not(.fc-inner--flipped) .fc-face--back  { visibility: hidden; pointer-events: none; }
+.fc-inner:not(.fc-inner--flipped) .fc-face--front { visibility: visible; pointer-events: auto; }
+
+/* Both faces occupy the same grid cell */
 .fc-face {
-  position: absolute;
-  inset: 0;
-  padding: 2.8rem 2.4rem;
-  border-radius: 24px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow:
-    0 0 0 1px rgba(99,102,241,0.08),
-    0 24px 60px rgba(0,0,0,0.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+  grid-area: 1 / 1;
+  padding: 2rem 2.2rem;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 0;
+  transition: background 0.3s, border-color 0.3s, opacity 0.35s, transform 0.35s;
+  transform-origin: center;
 }
+
+/* Inactive face: hidden behind */
+.fc-face--front  { opacity: 1; transform: scale(1); z-index: 2; }
+.fc-face--back   { opacity: 0; transform: scale(0.97); z-index: 1; }
+.fc-inner--flipped .fc-face--front { opacity: 0; transform: scale(0.97); z-index: 1; }
+.fc-inner--flipped .fc-face--back  { opacity: 1; transform: scale(1); z-index: 2; }
 
 /* Top indigo line */
 .fc-face::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.8), transparent);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #6366f1, transparent);
+  border-radius: 20px 20px 0 0;
+  pointer-events: none;
 }
 
-.fc-face--back { transform: rotateY(180deg); }
+.dark .fc-face {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+}
 
 /* ── Typography ─────────────────────────────────────────────────── */
 .fc-title {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  color: #fff;
-  margin: 0 0 0.3rem;
+  color: var(--text-primary);
+  margin: 0 0 0.2rem;
   letter-spacing: -0.025em;
 }
 .fc-subtitle {
-  font-size: 0.85rem;
-  color: rgba(255,255,255,0.4);
-  margin: 0 0 1.8rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
 }
 
 /* ── Form ───────────────────────────────────────────────────────── */
 .fc-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  flex: 1;
+  gap: 0.7rem;
 }
 
 .fc-field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 .fc-field label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: rgba(255,255,255,0.6);
+  color: var(--text-secondary);
   letter-spacing: 0.02em;
 }
 .fc-field input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
-  color: #fff;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Poppins', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
-.fc-field input::placeholder { color: rgba(255,255,255,0.22); }
+.fc-field input::placeholder { color: var(--text-secondary); opacity: 0.5; }
 .fc-field input:focus {
   border-color: #6366f1;
-  background: rgba(99,102,241,0.08);
   box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
 }
 .fc-field input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Error ──────────────────────────────────────────────────────── */
 .fc-error {
-  background: rgba(239,68,68,0.12);
+  background: rgba(239,68,68,0.1);
   border: 1px solid rgba(239,68,68,0.3);
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  font-size: 0.82rem;
-  color: #fca5a5;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  color: #ef4444;
+  margin-bottom: 0.2rem;
 }
+.dark .fc-error { color: #fca5a5; }
 
 /* ── Submit button ──────────────────────────────────────────────── */
 .fc-btn {
-  margin-top: auto;
-  padding: 0.85rem;
-  border-radius: 12px;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.7rem;
+  border-radius: 10px;
   border: none;
   background: #6366f1;
   color: #fff;
   font-family: 'Poppins', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(99,102,241,0.4);
+  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
   transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 .fc-btn:hover:not(:disabled) {
   background: #4f46e5;
-  box-shadow: 0 0 36px rgba(99,102,241,0.65);
+  box-shadow: 0 6px 24px rgba(99,102,241,0.55);
   transform: translateY(-1px);
 }
 .fc-btn:active:not(:disabled) {
   transform: translateY(1px);
-  box-shadow: 0 0 12px rgba(99,102,241,0.3);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
 }
 .fc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Forgot password row ─────────────────────────────────────────── */
+.fc-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.fc-forgot {
+  font-size: 0.75rem;
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.fc-forgot:hover { color: #818cf8; text-decoration: underline; }
+.dark .fc-forgot { color: #818cf8; }
+.dark .fc-forgot:hover { color: #a5b4fc; }
+
+/* ── Success banner (verified) ───────────────────────────────────── */
+.fc-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #16a34a;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.dark .fc-success { background: #14532d; border-color: #166534; color: #86efac; }
+
+/* ── Email verify notice ─────────────────────────────────────────── */
+.fc-verify-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 0;
+  gap: 0.6rem;
+}
+.fc-verify-icon { font-size: 2.5rem; }
+.fc-verify-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin: 0;
+}
+.fc-verify-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
+  margin: 0;
+}
+.fc-verify-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #9ca3af);
+  margin: 0;
+}
+.fc-btn--outline {
+  background: transparent;
+  border: 2px solid #6366f1;
+  color: #6366f1;
+  box-shadow: none;
+}
+.fc-btn--outline:hover:not(:disabled) { background: #6366f1; color: #fff; }
+.dark .fc-btn--outline { border-color: #818cf8; color: #818cf8; }
+.dark .fc-btn--outline:hover:not(:disabled) { background: #818cf8; color: #111; }
+
+/* ── Password show/hide ──────────────────────────────────────────── */
+.fc-pwd-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.fc-pwd-wrapper input {
+  width: 100%;
+  padding-right: 2.6rem;
+}
+.fc-pwd-toggle {
+  position: absolute;
+  right: 0.7rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.fc-pwd-toggle:hover { opacity: 1; }
+
+/* ── Password rules checklist ────────────────────────────────────── */
+.fc-pwd-rules {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.15rem 0.5rem;
+}
+.fc-pwd-rules li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.fc-pwd-rule--ok { color: #16a34a; }
+.fc-pwd-rule--ko { color: #9ca3af; }
+.dark .fc-pwd-rule--ok { color: #4ade80; }
+.dark .fc-pwd-rule--ko { color: #6b7280; }
+.fc-pwd-rule-icon { font-style: normal; font-size: 0.75rem; }
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 480px) {
+  .fc-center { padding: 1rem 0.75rem 1.5rem; gap: 1rem; }
+
+  .fc-face { padding: 1.5rem 1.25rem; }
+
+  .fc-title { font-size: 1.25rem; }
+  .fc-subtitle { font-size: 0.78rem; margin-bottom: 0.75rem; }
+
+  .fc-form { gap: 0.55rem; }
+
+  .fc-field input { padding: 0.55rem 0.75rem; font-size: 0.82rem; }
+
+  .fc-btn { padding: 0.65rem; font-size: 0.85rem; margin-top: 0.6rem; }
+
+  .fc-tab { font-size: 0.85rem; }
+
+  .fc-pwd-rules { grid-template-columns: 1fr; }
+}
+
+@media (max-height: 700px) {
+  .fc-center { padding: 0.75rem 1rem 1rem; gap: 0.75rem; }
+  .fc-face { padding: 1.25rem 1.5rem; }
+  .fc-subtitle { margin-bottom: 0.6rem; }
+  .fc-form { gap: 0.5rem; }
+  .fc-btn { margin-top: 0.5rem; }
+}
+
+/* ── Google OAuth ── */
+.fc-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.78rem;
+}
+.fc-divider::before,
+.fc-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, rgba(99,102,241,0.2));
+}
+
+/* ── Bouton Google custom ── */
+.fc-btn-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  border: 1.5px solid rgba(99,102,241,0.4);
+  background: transparent;
+  color: var(--text-primary);
+}
+.fc-btn-google:hover:not(:disabled) {
+  background: rgba(99,102,241,0.08);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  transform: translateY(-1px);
+}
+.fc-btn-google:active:not(:disabled) { transform: translateY(0); }
+.fc-btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
+.dark .fc-btn-google { border-color: rgba(129,140,248,0.35); color: var(--text-primary); }
+.dark .fc-btn-google:hover:not(:disabled) { background: rgba(129,140,248,0.1); border-color: #818cf8; }
+
+.fc-google-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}

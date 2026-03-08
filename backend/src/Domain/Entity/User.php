@@ -20,8 +20,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 180, unique: true)]
     private string $email;
 
-    #[ORM\Column(type: 'string')]
-    private string $password;
+    #[ORM\Column(type: 'string', nullable: true)]
+    private ?string $password = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $name;
@@ -38,9 +38,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $resetTokenExpiresAt = null;
 
+    #[ORM\Column(type: 'boolean')]
+    private bool $emailVerified = false;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private ?string $emailVerificationToken = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true, unique: true)]
+    private ?string $googleId = null;
+
     public function __construct(
         string $email,
-        string $password,
+        ?string $password,
         string $name
     ) {
         $this->email = $email;
@@ -65,12 +74,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }
 
-    public function setPassword(string $password): self
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
         return $this;
@@ -120,4 +129,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setResetToken(?string $token): self { $this->resetToken = $token; return $this; }
     public function getResetTokenExpiresAt(): ?\DateTimeImmutable { return $this->resetTokenExpiresAt; }
     public function setResetTokenExpiresAt(?\DateTimeImmutable $dt): self { $this->resetTokenExpiresAt = $dt; return $this; }
+
+    public function isEmailVerified(): bool { return $this->emailVerified; }
+    public function setEmailVerified(bool $verified): self { $this->emailVerified = $verified; return $this; }
+    public function getEmailVerificationToken(): ?string { return $this->emailVerificationToken; }
+    public function setEmailVerificationToken(?string $token): self { $this->emailVerificationToken = $token; return $this; }
+
+    public function getGoogleId(): ?string { return $this->googleId; }
+    public function setGoogleId(?string $googleId): self { $this->googleId = $googleId; return $this; }
 }

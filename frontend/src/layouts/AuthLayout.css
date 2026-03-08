@@ -1,16 +1,20 @@
 .auth-layout {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-primary);
+  overflow: hidden;
 }
 
 .auth-center {
   flex: 1;
+  min-height: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  padding: 1rem;
+  overflow: hidden;
 }
 
 /* Left side Branding */
@@ -103,10 +107,12 @@
 
 .auth-form-container {
   width: 100%;
-  max-width: 440px;
+  max-width: 400px;
+  max-height: 100%;
+  overflow-y: auto;
   background: var(--bg-primary);
-  border-radius: 24px;
-  padding: 3rem 2.5rem;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border-color);
   animation: slideInFade 0.5s ease-out forwards;
@@ -114,4 +120,16 @@
 
 .dark .auth-form-container {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive: narrow screens */
+@media (max-width: 480px) {
+  .auth-center {
+    padding: 0.75rem;
+  }
+
+  .auth-form-container {
+    padding: 1.5rem 1.25rem;
+    border-radius: 16px;
+  }
 }

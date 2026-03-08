@@ -16,7 +16,7 @@ security:
         
         # Firewall for public authentication routes
         auth:
-            pattern: ^/api/auth/(register|login|refresh)
+            pattern: ^/api/auth/(register|login|refresh|forgot-password|reset-password|verify-email|google)
             stateless: true
             security: false
         

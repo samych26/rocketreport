@@ -1,6 +1,7 @@
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import SplashScreen from './pages/SplashScreen';
@@ -14,10 +15,15 @@ import GenerationsPage from './pages/GenerationsPage';
 import SettingsPage from './pages/SettingsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerifyEmailSentPage from './pages/VerifyEmailSentPage';
 import './App.css';
 
 function App() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder';
+
   return (
+    <GoogleOAuthProvider clientId={googleClientId}>
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
@@ -35,11 +41,14 @@ function App() {
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/verify-email-sent" element={<VerifyEmailSentPage />} />
             </Routes>
           </Router>
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 

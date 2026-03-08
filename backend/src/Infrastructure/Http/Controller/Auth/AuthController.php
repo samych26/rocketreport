@@ -6,9 +6,11 @@ namespace App\Infrastructure\Http\Controller\Auth;
 
 use App\Application\DTO\Request\LoginUserRequest;
 use App\Application\DTO\Request\RegisterUserRequest;
+use App\Application\Service\EmailService;
 use App\Application\UseCase\Auth\LoginUser;
 use App\Application\UseCase\Auth\RegisterUser;
 use App\Application\Service\TokenManagerInterface;
+use App\Domain\Entity\User;
 use App\Domain\Repository\RefreshTokenRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\Service\PasswordHasherInterface;
@@ -18,8 +20,6 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -34,7 +34,7 @@ class AuthController extends AbstractController
         private readonly RefreshTokenRepositoryInterface $refreshTokenRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly PasswordHasherInterface $passwordHasher,
-        private readonly MailerInterface $mailer,
+        private readonly EmailService $emailService,
     ) {}
 
     #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
@@ -58,6 +58,11 @@ class AuthController extends AbstractController
                 );
             }
 
+            $passwordError = $this->validatePassword((string)$data['password']);
+            if ($passwordError !== null) {
+                return $this->json(['error' => $passwordError], Response::HTTP_BAD_REQUEST);
+            }
+
             $dto = new RegisterUserRequest(
                 email: (string)$data['email'],
                 password: (string)$data['password'],
@@ -67,8 +72,15 @@ class AuthController extends AbstractController
             // Appeler le use case
             $userResponse = ($this->registerUser)($dto);
 
+            $user = $this->userRepository->findByEmail($userResponse->email);
+            if ($user && $user->getEmailVerificationToken()) {
+                $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
+                $verifyUrl = "{$frontendUrl}/verify-email?token={$user->getEmailVerificationToken()}";
+                $this->emailService->sendEmailVerification($user->getEmail(), $user->getName(), $verifyUrl);
+            }
+
             return $this->json([
-                'message' => 'Utilisateur cree avec succes',
+                'message' => 'Compte créé. Vérifiez votre email pour activer votre compte.',
                 'user' => $userResponse,
             ], Response::HTTP_CREATED);
         } catch (\RuntimeException $e) {
@@ -97,6 +109,14 @@ class AuthController extends AbstractController
             );
 
             $loginResponse = ($this->loginUser)($dto);
+
+            $userEntity = $this->userRepository->findByEmail($dto->email);
+            if ($userEntity && !$userEntity->isEmailVerified()) {
+                return $this->json(
+                    ['error' => 'Veuillez vérifier votre email avant de vous connecter. Consultez votre boîte de réception.'],
+                    Response::HTTP_FORBIDDEN
+                );
+            }
 
             $accessToken = $loginResponse->token;
             $userEntityId = $loginResponse->user->id;
@@ -316,8 +336,9 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Mot de passe actuel incorrect.'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (strlen($newPassword) < 8) {
-            return $this->json(['error' => 'Le nouveau mot de passe doit faire au moins 8 caractères.'], Response::HTTP_BAD_REQUEST);
+        $passwordError = $this->validatePassword($newPassword);
+        if ($passwordError !== null) {
+            return $this->json(['error' => $passwordError], Response::HTTP_BAD_REQUEST);
         }
 
         $user->setPassword($this->passwordHasher->hash($newPassword));
@@ -350,6 +371,118 @@ class AuthController extends AbstractController
         return $response;
     }
 
+    #[Route('/verify-email', name: 'api_auth_verify_email', methods: ['POST'])]
+    public function verifyEmail(Request $request): JsonResponse
+    {
+        $data  = json_decode($request->getContent(), true) ?? [];
+        $token = trim((string)($data['token'] ?? ''));
+
+        if ($token === '') {
+            return $this->json(['error' => 'Token requis.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $this->userRepository->findByEmailVerificationToken($token);
+
+        if (!$user) {
+            return $this->json(['error' => 'Token invalide ou déjà utilisé.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->setEmailVerified(true);
+        $user->setEmailVerificationToken(null);
+        $this->userRepository->save($user);
+
+        return $this->json(['message' => 'Email vérifié. Votre compte est maintenant actif.']);
+    }
+
+    #[Route('/google', name: 'api_auth_google', methods: ['POST'])]
+    public function googleAuth(Request $request): JsonResponse
+    {
+        $data        = json_decode($request->getContent(), true) ?? [];
+        $credential  = trim((string)($data['credential']    ?? ''));
+        $accessToken = trim((string)($data['access_token']  ?? ''));
+
+        if ($credential === '' && $accessToken === '') {
+            return $this->json(['error' => 'Token Google requis.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $googleClientId = $_ENV['GOOGLE_CLIENT_ID'] ?? '';
+        $payload = null;
+
+        if ($credential !== '') {
+            // ID token path (GoogleLogin component)
+            $url      = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($credential);
+            $raw      = @file_get_contents($url);
+            if ($raw !== false) {
+                $payload = json_decode($raw, true);
+                if ($googleClientId !== 'YOUR_GOOGLE_CLIENT_ID' && ($payload['aud'] ?? '') !== $googleClientId) {
+                    $payload = null;
+                }
+            }
+        }
+
+        if ($payload === null && $accessToken !== '') {
+            // Access token path (useGoogleLogin hook)
+            $ctx = stream_context_create(['http' => [
+                'header' => 'Authorization: Bearer ' . $accessToken,
+            ]]);
+            $raw = @file_get_contents('https://www.googleapis.com/oauth2/v3/userinfo', false, $ctx);
+            if ($raw !== false) {
+                $payload = json_decode($raw, true);
+            }
+        }
+
+        if (!$payload || !isset($payload['sub'], $payload['email'])) {
+            return $this->json(['error' => 'Token Google invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $googleId = $payload['sub'];
+        $email    = $payload['email'];
+        $name     = $payload['name'] ?? explode('@', $email)[0];
+
+        // Find by Google ID or email
+        $user = $this->userRepository->findByGoogleId($googleId)
+             ?? $this->userRepository->findByEmail($email);
+
+        if (!$user) {
+            // Create new user
+            $user = new User(email: $email, password: null, name: $name);
+            $user->setEmailVerified(true);
+        }
+
+        // Always keep googleId linked
+        if ($user->getGoogleId() === null) {
+            $user->setGoogleId($googleId);
+        }
+        if (!$user->isEmailVerified()) {
+            $user->setEmailVerified(true);
+            $user->setEmailVerificationToken(null);
+        }
+
+        $this->userRepository->save($user);
+
+        $token = $this->tokenManager->createToken($user);
+
+        [$refreshTokenEntity, $refreshTokenRaw] = $this->refreshTokenGenerator->generate($user);
+        $this->refreshTokenRepository->save($refreshTokenEntity);
+
+        $isProduction = $this->getParameter('kernel.environment') === 'prod';
+
+        $response = $this->json([
+            'message' => 'Connexion Google réussie',
+            'user'    => \App\Application\DTO\Response\UserResponse::fromEntity($user),
+            'token'   => $token,
+        ]);
+
+        $response->headers->setCookie(
+            Cookie::create('rr_access', $token)->withHttpOnly(true)->withSecure($isProduction)->withPath('/')->withSameSite(Cookie::SAMESITE_LAX)
+        );
+        $response->headers->setCookie(
+            Cookie::create('rr_refresh', $refreshTokenRaw)->withHttpOnly(true)->withSecure($isProduction)->withPath('/')->withSameSite(Cookie::SAMESITE_LAX)
+        );
+
+        return $response;
+    }
+
     #[Route('/forgot-password', name: 'api_auth_forgot_password', methods: ['POST'])]
     public function forgotPassword(Request $request): JsonResponse
     {
@@ -372,26 +505,10 @@ class AuthController extends AbstractController
         $user->setResetTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
         $this->userRepository->save($user);
 
-        $frontendUrl = $this->getParameter('kernel.environment') === 'prod'
-            ? 'https://your-app.com'
-            : 'http://localhost:5173';
-
+        $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
         $resetUrl = "{$frontendUrl}/reset-password?token={$token}";
 
-        $emailMessage = (new Email())
-            ->from('no-reply@rocketreport.io')
-            ->to($user->getEmail())
-            ->subject('Réinitialisation de votre mot de passe RocketReport')
-            ->html("
-                <h2>Réinitialisation du mot de passe</h2>
-                <p>Bonjour {$user->getName()},</p>
-                <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-                <p><a href=\"{$resetUrl}\" style=\"background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;\">Réinitialiser mon mot de passe</a></p>
-                <p>Ce lien expire dans <strong>1 heure</strong>.</p>
-                <p>Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-            ");
-
-        $this->mailer->send($emailMessage);
+        $this->emailService->sendPasswordReset($user->getEmail(), $user->getName(), $resetUrl);
 
         return $this->json(['message' => 'Si cet email existe, un lien de réinitialisation a été envoyé.']);
     }
@@ -407,8 +524,9 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Token et mot de passe requis.'], Response::HTTP_BAD_REQUEST);
         }
 
-        if (strlen($newPassword) < 8) {
-            return $this->json(['error' => 'Le mot de passe doit faire au moins 8 caractères.'], Response::HTTP_BAD_REQUEST);
+        $passwordError = $this->validatePassword($newPassword);
+        if ($passwordError !== null) {
+            return $this->json(['error' => $passwordError], Response::HTTP_BAD_REQUEST);
         }
 
         $user = $this->userRepository->findByResetToken($token);
@@ -427,5 +545,22 @@ class AuthController extends AbstractController
         $this->userRepository->save($user);
 
         return $this->json(['message' => 'Mot de passe réinitialisé avec succès.']);
+    }
+
+    private function validatePassword(string $password): ?string
+    {
+        if (strlen($password) < 8) {
+            return 'Le mot de passe doit faire au moins 8 caractères.';
+        }
+        if (!preg_match('/[A-Z]/', $password)) {
+            return 'Le mot de passe doit contenir au moins une majuscule.';
+        }
+        if (!preg_match('/[0-9]/', $password)) {
+            return 'Le mot de passe doit contenir au moins un chiffre.';
+        }
+        if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+            return 'Le mot de passe doit contenir au moins un caractère spécial.';
+        }
+        return null;
     }
 }

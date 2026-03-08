@@ -33,6 +33,8 @@ class RegisterUser
             name: $request->name,
         );
 
+        $user->setEmailVerificationToken(bin2hex(random_bytes(32)));
+
         $this->userRepository->save($user);
 
         return UserResponse::fromEntity($user);
