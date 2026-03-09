@@ -1,0 +1,18 @@
+services:
+  # ── Frontend React/Vite — Static Site (100% gratuit, jamais de sleep)
+  - type: web
+    name: rocketreport-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npx vite build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    envVars:
+      - key: VITE_API_URL
+        sync: false   # à renseigner dans le dashboard Render
