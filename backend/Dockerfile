@@ -42,11 +42,23 @@ RUN echo '<VirtualHost *:80>\n\
     CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
 </VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
-# Copy existing app (mounted in docker-compose, so this is mostly for build)
+# Install Composer dependencies first (better layer caching)
+COPY composer.json composer.lock /var/www/html/
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader \
+    && composer dump-autoload --optimize --no-dev
+
+# Copy the rest of the application
 COPY . /var/www/html
+
+# Re-run autoloader now that all files are present
+RUN composer dump-autoload --optimize --no-dev
 
 # Install sandbox npm dependencies
 RUN cd /var/www/html/scripts && npm install --omit=dev
+
+# Copy and prepare entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create secure storage for generated files (outside public/)
 RUN mkdir -p /var/www/html/var/generated && chown -R www-data:www-data /var/www/html/var && chmod 755 /var/www/html/var/generated
@@ -56,4 +68,5 @@ RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
