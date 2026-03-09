@@ -44,20 +44,20 @@ class AdminDashboardController extends AbstractDashboardController
 
     public function configureMenuItems(): iterable
     {
-        yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
+        yield MenuItem::linkToDashboard('Dashboard', 'fa-solid fa-house');
 
         yield MenuItem::section('Utilisateurs');
-        yield MenuItem::linkTo('Utilisateurs', 'fa fa-users', UserCrudController::class)->setAction('index');
+        yield MenuItem::linkToRoute('Utilisateurs', 'fa-solid fa-users', 'admin_user_index');
 
         yield MenuItem::section('Contenu');
-        yield MenuItem::linkTo('Sources API', 'fa fa-plug', ApiSourceCrudController::class)->setAction('index');
-        yield MenuItem::linkTo('Documents', 'fa fa-file-alt', DocumentCrudController::class)->setAction('index');
-        yield MenuItem::linkTo('Templates', 'fa fa-paint-brush', TemplateCrudController::class)->setAction('index');
+        yield MenuItem::linkToRoute('Sources API', 'fa-solid fa-plug', 'admin_api_source_index');
+        yield MenuItem::linkToRoute('Documents', 'fa-solid fa-file-lines', 'admin_document_index');
+        yield MenuItem::linkToRoute('Templates', 'fa-solid fa-paintbrush', 'admin_template_index');
 
         yield MenuItem::section('Activité');
-        yield MenuItem::linkTo('Générations', 'fa fa-cogs', DocumentGenerationCrudController::class)->setAction('index');
+        yield MenuItem::linkToRoute('Générations', 'fa-solid fa-gears', 'admin_document_generation_index');
 
         yield MenuItem::section('');
-        yield MenuItem::linkToUrl('← Retour au site', 'fa fa-arrow-left', '/');
+        yield MenuItem::linkToUrl('← Retour au site', 'fa-solid fa-arrow-left', '/');
     }
 }
