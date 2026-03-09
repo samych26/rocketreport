@@ -43,9 +43,12 @@ RUN echo '<VirtualHost *:80>\n\
         Require all granted\n\
         Options -Indexes\n\
     </Directory>\n\
+    Header always set Cross-Origin-Opener-Policy "unsafe-none"\n\
+    Header always set Cross-Origin-Embedder-Policy "unsafe-none"\n\
     ErrorLog ${APACHE_LOG_DIR}/error.log\n\
     CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
-</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf \
+    && a2enmod headers
 
 # Install Composer dependencies first (better layer caching)
 COPY composer.json composer.lock /var/www/html/
