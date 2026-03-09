@@ -55,6 +55,9 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
 # Copy the rest of the application
 COPY . /var/www/html
 
+# Create minimal .env for Symfony bootEnv (real values come from environment variables)
+RUN echo "APP_ENV=prod" > /var/www/html/.env
+
 # Re-run autoloader now that all files are present
 RUN composer dump-autoload --optimize --no-dev
 
