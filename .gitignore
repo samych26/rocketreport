@@ -1,3 +1,29 @@
 
-# Windows Zone.Identifier artifacts
+# ── Node ──────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ── Frontend build ────────────────────
+frontend/dist/
+
+# ── Symfony ───────────────────────────
+backend/.env.local
+backend/.env.*.local
+backend/var/
+backend/vendor/
+backend/config/jwt/private.pem
+backend/config/jwt/public.pem
+
+# ── Secrets / env ─────────────────────
+.env
+.env.local
+.env.prod
+*.pem
+*.key
+
+# ── Système ───────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Windows Zone.Identifier artifacts ─
 *:Zone.Identifier
