@@ -47,15 +47,15 @@ class AdminDashboardController extends AbstractDashboardController
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Utilisateurs');
-        yield MenuItem::linkTo('Utilisateurs', 'fa fa-users', UserCrudController::class);
+        yield MenuItem::linkTo('Utilisateurs', 'fa fa-users', UserCrudController::class)->setAction('index');
 
         yield MenuItem::section('Contenu');
-        yield MenuItem::linkTo('Sources API', 'fa fa-plug', ApiSourceCrudController::class);
-        yield MenuItem::linkTo('Documents', 'fa fa-file-alt', DocumentCrudController::class);
-        yield MenuItem::linkTo('Templates', 'fa fa-paint-brush', TemplateCrudController::class);
+        yield MenuItem::linkTo('Sources API', 'fa fa-plug', ApiSourceCrudController::class)->setAction('index');
+        yield MenuItem::linkTo('Documents', 'fa fa-file-alt', DocumentCrudController::class)->setAction('index');
+        yield MenuItem::linkTo('Templates', 'fa fa-paint-brush', TemplateCrudController::class)->setAction('index');
 
         yield MenuItem::section('Activité');
-        yield MenuItem::linkTo('Générations', 'fa fa-cogs', DocumentGenerationCrudController::class);
+        yield MenuItem::linkTo('Générations', 'fa fa-cogs', DocumentGenerationCrudController::class)->setAction('index');
 
         yield MenuItem::section('');
         yield MenuItem::linkToUrl('← Retour au site', 'fa fa-arrow-left', '/');
