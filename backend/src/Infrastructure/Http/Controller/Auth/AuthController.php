@@ -140,13 +140,13 @@ class AuthController extends AbstractController
                 ->withHttpOnly(true)
                 ->withSecure($isProduction)
                 ->withPath('/')
-                ->withSameSite(Cookie::SAMESITE_LAX);
+                ->withSameSite(Cookie::SAMESITE_NONE);
 
             $refreshCookie = Cookie::create('rr_refresh', $refreshTokenRaw)
                 ->withHttpOnly(true)
                 ->withSecure($isProduction)
                 ->withPath('/')
-                ->withSameSite(Cookie::SAMESITE_LAX);
+                ->withSameSite(Cookie::SAMESITE_NONE);
 
             $response->headers->setCookie($accessCookie);
             $response->headers->setCookie($refreshCookie);
@@ -219,13 +219,13 @@ class AuthController extends AbstractController
                 ->withHttpOnly(true)
                 ->withSecure($isProduction)
                 ->withPath('/')
-                ->withSameSite(Cookie::SAMESITE_LAX);
+                ->withSameSite(Cookie::SAMESITE_NONE);
 
             $refreshCookie = Cookie::create('rr_refresh', $newRefreshTokenRaw)
                 ->withHttpOnly(true)
                 ->withSecure($isProduction)
                 ->withPath('/')
-                ->withSameSite(Cookie::SAMESITE_LAX);
+                ->withSameSite(Cookie::SAMESITE_NONE);
 
             $response->headers->setCookie($accessCookie);
             $response->headers->setCookie($refreshCookie);
@@ -474,10 +474,10 @@ class AuthController extends AbstractController
         ]);
 
         $response->headers->setCookie(
-            Cookie::create('rr_access', $token)->withHttpOnly(true)->withSecure($isProduction)->withPath('/')->withSameSite(Cookie::SAMESITE_LAX)
+            Cookie::create('rr_access', $token)->withHttpOnly(true)->withSecure($isProduction)->withPath('/')->withSameSite(Cookie::SAMESITE_NONE)
         );
         $response->headers->setCookie(
-            Cookie::create('rr_refresh', $refreshTokenRaw)->withHttpOnly(true)->withSecure($isProduction)->withPath('/')->withSameSite(Cookie::SAMESITE_LAX)
+            Cookie::create('rr_refresh', $refreshTokenRaw)->withHttpOnly(true)->withSecure($isProduction)->withPath('/')->withSameSite(Cookie::SAMESITE_NONE)
         );
 
         return $response;
