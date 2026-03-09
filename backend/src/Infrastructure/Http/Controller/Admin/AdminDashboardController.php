@@ -7,6 +7,11 @@ use App\Domain\Entity\Document;
 use App\Domain\Entity\DocumentGeneration;
 use App\Domain\Entity\Template;
 use App\Domain\Entity\User;
+use App\Infrastructure\Http\Controller\Admin\ApiSourceCrudController;
+use App\Infrastructure\Http\Controller\Admin\DocumentCrudController;
+use App\Infrastructure\Http\Controller\Admin\DocumentGenerationCrudController;
+use App\Infrastructure\Http\Controller\Admin\TemplateCrudController;
+use App\Infrastructure\Http\Controller\Admin\UserCrudController;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
@@ -42,15 +47,15 @@ class AdminDashboardController extends AbstractDashboardController
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
 
         yield MenuItem::section('Utilisateurs');
-        yield MenuItem::linkToCrud('Utilisateurs', 'fa fa-users', User::class);
+        yield MenuItem::linkTo('Utilisateurs', 'fa fa-users', UserCrudController::class);
 
         yield MenuItem::section('Contenu');
-        yield MenuItem::linkToCrud('Sources API', 'fa fa-plug', ApiSource::class);
-        yield MenuItem::linkToCrud('Documents', 'fa fa-file-alt', Document::class);
-        yield MenuItem::linkToCrud('Templates', 'fa fa-paint-brush', Template::class);
+        yield MenuItem::linkTo('Sources API', 'fa fa-plug', ApiSourceCrudController::class);
+        yield MenuItem::linkTo('Documents', 'fa fa-file-alt', DocumentCrudController::class);
+        yield MenuItem::linkTo('Templates', 'fa fa-paint-brush', TemplateCrudController::class);
 
         yield MenuItem::section('Activité');
-        yield MenuItem::linkToCrud('Générations', 'fa fa-cogs', DocumentGeneration::class);
+        yield MenuItem::linkTo('Générations', 'fa fa-cogs', DocumentGenerationCrudController::class);
 
         yield MenuItem::section('');
         yield MenuItem::linkToUrl('← Retour au site', 'fa fa-arrow-left', '/');
