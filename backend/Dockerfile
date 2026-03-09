@@ -13,10 +13,15 @@ RUN apt-get update && apt-get install -y \
     libgd-dev \
     libpng-dev \
     libjpeg-dev \
+    fontconfig \
+    libxrender1 \
+    xfonts-75dpi \
+    xfonts-base \
+    libssl3 \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && curl -sL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb -o /tmp/wkhtmltopdf.deb \
-    && dpkg -i /tmp/wkhtmltopdf.deb \
+    && dpkg -i /tmp/wkhtmltopdf.deb || apt-get install -f -y \
     && rm /tmp/wkhtmltopdf.deb \
     && docker-php-ext-configure gd --with-jpeg \
     && docker-php-ext-install \
