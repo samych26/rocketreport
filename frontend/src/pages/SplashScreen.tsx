@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SplashScreen.css';
+import logo from '../assets/logo-white.svg';
 
 const SplashScreen = () => {
     const navigate = useNavigate();
@@ -24,7 +25,7 @@ const SplashScreen = () => {
                 <div className="splash-logo-wrapper">
                     <div className="splash-glow" />
                     <img
-                        src="/src/assets/logoWhite (2).svg"
+                        src={logo}
                         alt="RocketReport"
                         className="splash-logo"
                     />
