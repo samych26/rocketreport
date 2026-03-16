@@ -345,7 +345,7 @@ const Dashboard = () => {
                             </div>
                             <div className="stat-info">
                                 <span className="stat-value">{counts[key]}</span>
-                                <span className="stat-label">label</span>
+                                <span className="stat-label">{label}</span>
                             </div>
                         </div>
                     ))}
