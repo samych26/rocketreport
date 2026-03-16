@@ -45,7 +45,7 @@ services:
 
     App\Infrastructure\External\PdfGeneration\SnappyPdfService:
         arguments:
-            $wkhtmltopdfBinary: '/usr/bin/wkhtmltopdf'
+            $wkhtmltopdfBinary: '/usr/local/bin/wkhtmltopdf'
 
     App\Application\Service\EmailService:
         arguments:
