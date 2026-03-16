@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
 import backgroundVideo from '../assets/background.mp4';
@@ -62,8 +62,8 @@ const LoadingPage = () => {
                         {FEATURES.map(({ icon, key }, i) => (
                             <div key={key} className="welcome-card reveal" style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}>
                                 <div className="welcome-card-icon">{icon}</div>
-                                <h3>{t(`${key}_title`)}</h3>
-                                <p>{t(`${key}_desc`)}</p>
+                                <h3>{t(`${key}_title` as any)}</h3>
+                                <p>{t(`${key}_desc` as any)}</p>
                             </div>
                         ))}
                     </div>
@@ -80,8 +80,8 @@ const LoadingPage = () => {
                         {(['1','2','3','4'] as const).map((n, i) => (
                             <div key={n} className="welcome-step reveal" style={{ '--delay': `${i * 0.12}s` } as React.CSSProperties}>
                                 <span className="welcome-step-num">0{n}</span>
-                                <h4>{t(`step${n}_title`)}</h4>
-                                <p>{t(`step${n}_desc`)}</p>
+                                <h4>{t(`step${n}_title` as any)}</h4>
+                                <p>{t(`step${n}_desc` as any)}</p>
                             </div>
                         ))}
                     </div>
