@@ -2,7 +2,7 @@ services:
   - type: static
     name: rocketreport-frontend
     rootDir: frontend
-    buildCommand: npm install && npx vite build
+    buildCommand: npm install && npm run build
     staticPublishPath: dist
     routes:
       - type: rewrite
