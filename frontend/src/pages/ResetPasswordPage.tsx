@@ -14,6 +14,7 @@ const ResetPasswordPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const token = searchParams.get('token') ?? '';
+    console.log('ResetPasswordPage token:', token);
 
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
