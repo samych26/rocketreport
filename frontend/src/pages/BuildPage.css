@@ -500,6 +500,68 @@
     min-height: 0;
 }
 
+/* ═══════════════════════════════════════
+   RESPONSIVE MOBILE
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Split workspace → colonne */
+    .build-workspace--split {
+        flex-direction: column;
+    }
+    .build-workspace--split .build-list-col {
+        flex: 0 0 auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+    .build-workspace {
+        height: auto;
+        overflow: visible;
+    }
+
+    /* Wizard header : masquer les labels du stepper sur mobile */
+    .stepper-label {
+        display: none;
+    }
+    .wizard-header {
+        padding: 0.75rem 1rem;
+        gap: 0.75rem;
+    }
+    .wizard-body {
+        padding: 1rem;
+    }
+    .wizard-footer {
+        padding: 0.75rem 1rem;
+    }
+
+    /* Code step → 1 colonne */
+    .wizard-step--code {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    .code-pane,
+    .code-result-pane {
+        min-height: 200px;
+    }
+    .code-editor {
+        min-height: 180px;
+    }
+
+    /* Source grid → 1-2 colonnes */
+    .source-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
+    /* Boutons footer pleine largeur */
+    .btn-next,
+    .btn-prev {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
 .code-pane, .code-result-pane {
     display: flex;
     flex-direction: column;

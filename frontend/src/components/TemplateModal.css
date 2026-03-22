@@ -470,3 +470,41 @@
     background: var(--accent-hover);
     box-shadow: 0 4px 12px rgba(210,166,121,0.4);
 }
+
+@media (max-width: 600px) {
+    .modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+    .modal-panel {
+        max-height: 95dvh;
+        border-radius: 16px 16px 0 0;
+        width: 100%;
+    }
+    .modal-header {
+        padding: 1rem;
+    }
+    .modal-body {
+        padding: 0.875rem 1rem;
+    }
+    .modal-footer {
+        padding: 0.5rem 1rem 1rem;
+    }
+    .modal-row {
+        flex-direction: column;
+    }
+    .form-field--sm {
+        flex: 1 1 100%;
+    }
+    .modal-footer {
+        flex-direction: column;
+    }
+    .modal-footer .btn-cancel,
+    .modal-footer .btn-save {
+        width: 100%;
+        justify-content: center;
+    }
+    .helpers-grid {
+        grid-template-columns: 1fr;
+    }
+}

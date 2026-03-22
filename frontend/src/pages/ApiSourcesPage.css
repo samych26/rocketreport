@@ -1,7 +1,7 @@
 /* Grid */
 .api-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1rem;
 }
 
@@ -207,4 +207,16 @@
 @keyframes shimmer {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+@media (max-width: 600px) {
+    .api-grid {
+        grid-template-columns: 1fr;
+    }
+    .api-card-header {
+        flex-wrap: wrap;
+    }
+    .api-card-actions {
+        margin-left: auto;
+    }
 }

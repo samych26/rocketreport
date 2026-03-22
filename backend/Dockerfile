@@ -58,12 +58,15 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-autoloader
 # Copy the rest of the application
 COPY . /var/www/html
 
-# Create minimal .env for Symfony bootEnv (real values come from environment variables)
-RUN echo "APP_ENV=prod" > /var/www/html/.env
-
 # Re-run autoloader now that all files are present
 RUN composer dump-autoload --optimize --no-dev
-RUN php bin/console assets:install public
+
+# Create minimal .env for build-time Symfony commands
+# DATABASE_URL placeholder prevents kernel boot crash — real value comes from runtime env
+RUN echo "APP_ENV=prod" > /var/www/html/.env \
+    && echo "DATABASE_URL=mysql://build:build@localhost:3306/build" >> /var/www/html/.env \
+    && php bin/console assets:install public --no-debug \
+    && echo "" > /var/www/html/.env
 
 # Install sandbox npm dependencies
 RUN cd /var/www/html/scripts && npm install --omit=dev

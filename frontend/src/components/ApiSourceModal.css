@@ -145,3 +145,15 @@
 }
 
 .header-add:hover { border-color: var(--accent-color); color: var(--accent-color); box-shadow: none; }
+
+@media (max-width: 600px) {
+    .api-modal-panel {
+        max-width: 100%;
+    }
+    .auth-type-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .header-row {
+        grid-template-columns: 1fr 1fr 32px;
+    }
+}

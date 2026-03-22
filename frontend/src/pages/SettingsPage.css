@@ -241,3 +241,38 @@
 /* Spin animation (reuse from other pages) */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 0.7s linear infinite; }
+
+@media (max-width: 600px) {
+    .settings-page {
+        max-width: 100%;
+    }
+    .settings-card {
+        padding: 1rem;
+    }
+    .settings-theme-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .danger-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .danger-row .settings-btn-danger-outline,
+    .danger-row .settings-btn-danger {
+        width: 100%;
+        justify-content: center;
+    }
+    .delete-confirm-row {
+        flex-direction: column;
+    }
+    .delete-confirm-row .settings-input {
+        width: 100%;
+    }
+    .delete-confirm-row .settings-btn-danger {
+        width: 100%;
+        justify-content: center;
+    }
+    .settings-header h1 {
+        font-size: 1.4rem;
+    }
+}

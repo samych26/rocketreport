@@ -202,3 +202,34 @@
 /* spin */
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) {
+    .dashboard-header h1 {
+        font-size: 1.4rem;
+    }
+    .dashboard-stats {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    .stat-card {
+        padding: 1rem;
+    }
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    .example-templates-grid {
+        grid-template-columns: 1fr;
+    }
+    .preview-overlay {
+        padding: 0.5rem;
+    }
+    .preview-modal {
+        max-height: 95vh;
+        border-radius: 12px;
+    }
+    .preview-iframe {
+        min-height: 300px;
+    }
+    .etpl-actions {
+        flex-wrap: wrap;
+    }
+}

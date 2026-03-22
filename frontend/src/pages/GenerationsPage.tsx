@@ -161,6 +161,7 @@ const BuildRow = ({ build }: BuildRowProps) => {
                     ) : generations.length === 0 ? (
                         <p className="gen-history-empty">Aucune génération pour ce build.</p>
                     ) : (
+                        <div className="gen-table-wrap">
                         <table className="gen-table">
                             <thead>
                                 <tr>
@@ -210,6 +211,8 @@ const BuildRow = ({ build }: BuildRowProps) => {
                                 ))}
                             </tbody>
                         </table>
+                        </div>
+
                     )}
                 </div>
             )}

@@ -127,33 +127,9 @@
   }
 }
 
+/* Mobile : la sidebar gère déjà toute la nav, on masque la navbar */
 @media (max-width: 600px) {
   .navbar {
-    flex-direction: column;
-    height: auto;
-    padding: 0 0.2rem;
-    position: static;
-    border-bottom: none;
-    border-top: 1px solid var(--border-color);
-    z-index: 100;
-  }
-  .navbar-left {
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 0.5rem;
-  }
-  .navbar-controls {
-    flex-wrap: wrap;
-    gap: 0.2rem;
-    justify-content: center;
-    width: 100%;
-  }
-  .navbar-profile-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-    border-radius: 16px;
-  }
-  .profile-name {
-    max-width: 40px;
+    display: none;
   }
 }

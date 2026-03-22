@@ -16,3 +16,24 @@
     padding: 2rem;
     overflow-y: auto;
 }
+
+/* Tablet : sidebar réduite à 60px */
+@media (max-width: 900px) {
+    .main-area {
+        margin-left: 60px;
+    }
+    .main-content {
+        padding: 1.5rem;
+    }
+}
+
+/* Mobile : sidebar devient une barre en haut (60px) */
+@media (max-width: 600px) {
+    .main-area {
+        margin-left: 0;
+        padding-top: 60px; /* hauteur de la top-bar sidebar */
+    }
+    .main-content {
+        padding: 1rem;
+    }
+}
