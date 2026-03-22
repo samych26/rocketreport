@@ -6,6 +6,7 @@ namespace App\Infrastructure\Http\Controller\Document;
 
 use App\Application\Service\DocumentService;
 use App\Application\Service\ApiSourceService;
+use App\Application\Service\ApiEndpointService;
 use App\Domain\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,6 +20,7 @@ final class DocumentController extends AbstractController
     public function __construct(
         private DocumentService $documentService,
         private ApiSourceService $apiSourceService,
+        private ApiEndpointService $apiEndpointService,
     ) {}
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -34,11 +36,11 @@ final class DocumentController extends AbstractController
             'name' => $doc->getName(),
             'description' => $doc->getDescription(),
             'api_source_id' => $doc->getApiSource()->getId(),
-            'endpoint' => $doc->getEndpoint(),
-            'method' => $doc->getMethod(),
-            'query_params' => $doc->getQueryParams(),
-            'path_params' => $doc->getPathParams(),
-            'body_schema' => $doc->getBodySchema(),
+            'api_endpoint' => [
+                'id' => $doc->getApiEndpoint()->getId(),
+                'path' => $doc->getApiEndpoint()->getPath(),
+                'method' => $doc->getApiEndpoint()->getMethod(),
+            ],
             'status' => $doc->getStatus(),
             'created_at' => $doc->getCreatedAt()->format('c'),
         ], $documents);
@@ -57,26 +59,21 @@ final class DocumentController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        if (!isset($data['name']) || !isset($data['api_source_id']) || !isset($data['endpoint'])) {
-            return $this->json(['error' => 'name, api_source_id et endpoint sont requis'], Response::HTTP_BAD_REQUEST);
+        if (!isset($data['name']) || !isset($data['api_endpoint_id'])) {
+            return $this->json(['error' => 'name et api_endpoint_id sont requis'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Vérifie que l'API source appartient à l'utilisateur
-        $apiSource = $this->apiSourceService->getApiSource($data['api_source_id'], $user);
-        if (!$apiSource) {
-            return $this->json(['error' => 'API Source not found'], Response::HTTP_NOT_FOUND);
+        $apiEndpoint = $this->apiEndpointService->getApiEndpointByIdAndUser((int)$data['api_endpoint_id'], $user);
+        if (!$apiEndpoint) {
+            return $this->json(['error' => 'API Endpoint not found or unauthorized'], Response::HTTP_NOT_FOUND);
         }
 
         try {
             $document = $this->documentService->createDocument(
                 $user,
-                $apiSource,
-                $data['name'],
-                $data['endpoint'],
-                $data['method'] ?? 'GET',
-                $data['query_params'] ?? null,
-                $data['path_params'] ?? null,
-                $data['body_schema'] ?? null,
+                $apiEndpoint->getApiSource(),
+                $apiEndpoint,
+                $data['name']
             );
 
             return $this->json([
@@ -85,12 +82,11 @@ final class DocumentController extends AbstractController
                     'id' => $document->getId(),
                     'name' => $document->getName(),
                     'description' => $document->getDescription(),
-                    'api_source_id' => $document->getApiSource()->getId(),
-                    'endpoint' => $document->getEndpoint(),
-                    'method' => $document->getMethod(),
-                    'query_params' => $document->getQueryParams(),
-                    'path_params' => $document->getPathParams(),
-                    'body_schema' => $document->getBodySchema(),
+                    'api_endpoint' => [
+                        'id' => $document->getApiEndpoint()->getId(),
+                        'path' => $document->getApiEndpoint()->getPath(),
+                        'method' => $document->getApiEndpoint()->getMethod(),
+                    ],
                     'status' => $document->getStatus(),
                     'created_at' => $document->getCreatedAt()->format('c'),
                 ],
@@ -119,11 +115,11 @@ final class DocumentController extends AbstractController
                 'name' => $document->getName(),
                 'description' => $document->getDescription(),
                 'api_source_id' => $document->getApiSource()->getId(),
-                'endpoint' => $document->getEndpoint(),
-                'method' => $document->getMethod(),
-                'query_params' => $document->getQueryParams(),
-                'path_params' => $document->getPathParams(),
-                'body_schema' => $document->getBodySchema(),
+                'api_endpoint' => [
+                    'id' => $document->getApiEndpoint()->getId(),
+                    'path' => $document->getApiEndpoint()->getPath(),
+                    'method' => $document->getApiEndpoint()->getMethod(),
+                ],
                 'status' => $document->getStatus(),
                 'created_at' => $document->getCreatedAt()->format('c'),
                 'updated_at' => $document->getUpdatedAt()->format('c'),
@@ -154,12 +150,11 @@ final class DocumentController extends AbstractController
                     'id' => $updated->getId(),
                     'name' => $updated->getName(),
                     'description' => $updated->getDescription(),
-                    'api_source_id' => $updated->getApiSource()->getId(),
-                    'endpoint' => $updated->getEndpoint(),
-                    'method' => $updated->getMethod(),
-                    'query_params' => $updated->getQueryParams(),
-                    'path_params' => $updated->getPathParams(),
-                    'body_schema' => $updated->getBodySchema(),
+                    'api_endpoint' => [
+                        'id' => $updated->getApiEndpoint()->getId(),
+                        'path' => $updated->getApiEndpoint()->getPath(),
+                        'method' => $updated->getApiEndpoint()->getMethod(),
+                    ],
                     'status' => $updated->getStatus(),
                     'updated_at' => $updated->getUpdatedAt()->format('c'),
                 ],
@@ -206,12 +201,8 @@ final class DocumentController extends AbstractController
             $newDocument = $this->documentService->createDocument(
                 $user,
                 $document->getApiSource(),
-                $document->getName() . ' (Copy)',
-                $document->getEndpoint(),
-                $document->getMethod(),
-                $document->getQueryParams(),
-                $document->getPathParams(),
-                $document->getBodySchema(),
+                $document->getApiEndpoint(),
+                $document->getName() . ' (Copy)'
             );
 
             return $this->json([
@@ -220,9 +211,11 @@ final class DocumentController extends AbstractController
                     'id' => $newDocument->getId(),
                     'name' => $newDocument->getName(),
                     'description' => $newDocument->getDescription(),
-                    'api_source_id' => $newDocument->getApiSource()->getId(),
-                    'endpoint' => $newDocument->getEndpoint(),
-                    'method' => $newDocument->getMethod(),
+                    'api_endpoint' => [
+                        'id' => $newDocument->getApiEndpoint()->getId(),
+                        'path' => $newDocument->getApiEndpoint()->getPath(),
+                        'method' => $newDocument->getApiEndpoint()->getMethod(),
+                    ],
                     'status' => $newDocument->getStatus(),
                     'created_at' => $newDocument->getCreatedAt()->format('c'),
                 ],

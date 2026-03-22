@@ -6,6 +6,7 @@ namespace App\Application\Service;
 
 use App\Domain\Entity\Document;
 use App\Domain\Entity\ApiSource;
+use App\Domain\Entity\ApiEndpoint;
 use App\Domain\Entity\User;
 use App\Domain\Repository\DocumentRepositoryInterface;
 
@@ -21,17 +22,10 @@ final class DocumentService
     public function createDocument(
         User $user,
         ApiSource $apiSource,
-        string $name,
-        string $endpoint,
-        string $method = 'GET',
-        ?array $query_params = null,
-        ?array $path_params = null,
-        ?array $body_schema = null,
+        ApiEndpoint $apiEndpoint,
+        string $name
     ): Document {
-        $document = new Document($user, $apiSource, $name, $endpoint, $method);
-        $document->setQueryParams($query_params);
-        $document->setPathParams($path_params);
-        $document->setBodySchema($body_schema);
+        $document = new Document($user, $apiSource, $apiEndpoint, $name);
 
         $this->documentRepository->save($document);
 
@@ -49,20 +43,8 @@ final class DocumentService
         if (isset($data['description'])) {
             $document->setDescription($data['description']);
         }
-        if (isset($data['endpoint'])) {
-            $document->setEndpoint($data['endpoint']);
-        }
-        if (isset($data['method'])) {
-            $document->setMethod($data['method']);
-        }
-        if (isset($data['query_params'])) {
-            $document->setQueryParams($data['query_params']);
-        }
-        if (isset($data['path_params'])) {
-            $document->setPathParams($data['path_params']);
-        }
-        if (isset($data['body_schema'])) {
-            $document->setBodySchema($data['body_schema']);
+        if (isset($data['api_endpoint'])) {
+            $document->setApiEndpoint($data['api_endpoint']);
         }
         if (isset($data['status'])) {
             $document->setStatus($data['status']);

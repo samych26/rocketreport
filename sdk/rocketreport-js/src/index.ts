@@ -29,16 +29,25 @@ export interface ApiSourceData {
 export interface BuildData {
   /** Name of the build or document */
   name: string;
-  /** ID of the associated API source */
-  api_source_id: number;
-  /** API endpoint to fetch data from */
-  endpoint: string;
+  /** ID of the associated API Endpoint */
+  api_endpoint_id: number;
   /** Code or identifier for this build */
   code: string;
   /** ID of a template to use for rendering */
   template_id?: number;
-  /** HTTP method to use (default: GET) */
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
+}
+
+export interface ApiEndpointData {
+  /** Name of the Api Endpoint */
+  name: string;
+  /** Path of the endpoint, appended to ApiSource base_url (e.g. /orders) */
+  path: string;
+  /** Method (e.g GET) */
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /** Variables to filter the JSON response keys (e.g. ["id", "price"]) */
+  variables?: string[];
+  /** Description */
+  description?: string;
 }
 
 export interface TemplateData {
@@ -128,6 +137,29 @@ export class RocketReport {
   }
 
   /**
+   * Create a new API Endpoint under an API Source
+   * 
+   * @param sourceId The ID of the API Source
+   * @param data Configuration for the new Endpoint
+   * @returns The created API Endpoint object
+   */
+  async createApiEndpoint(sourceId: number, data: ApiEndpointData) {
+    const response = await this.client.post(`/api/api-sources/${sourceId}/endpoints`, data);
+    return response.data;
+  }
+
+  /**
+   * Fetch data for a specific Build (uses the linked ApiEndpoint to fetch from the provider)
+   * 
+   * @param buildId The ID of the Build
+   * @returns The JSON data returned by the API
+   */
+  async fetchBuildData(buildId: number) {
+    const response = await this.client.get(`/api/builds/${buildId}/data`);
+    return response.data;
+  }
+
+  /**
    * Generate a report from a Build
    * 
    * @param buildId The ID of the Build to generate
@@ -136,6 +168,21 @@ export class RocketReport {
    */
   async generate(buildId: number, params: Record<string, any> = {}) {
     const response = await this.client.post(`/api/builds/${buildId}/generate`, { params });
+    return response.data;
+  }
+
+  /**
+   * Generate a report but override the API fetching process by providing the data directly
+   * 
+   * @param buildId The ID of the Build to generate
+   * @param data The JSON data to use for generation (bypasses the ApiSource fetch)
+   * @param params Dynamic parameters to pass to the report generation
+   * @returns The generated report data
+   */
+  async generateWithData(buildId: number, data: any, params: Record<string, any> = {}) {
+    const response = await this.client.post(`/api/builds/${buildId}/generate`, { 
+      params: { ...params, _override_data: data } 
+    });
     return response.data;
   }
 

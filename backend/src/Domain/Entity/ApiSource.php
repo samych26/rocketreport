@@ -51,6 +51,9 @@ class ApiSource
     #[ORM\OneToMany(targetEntity: Document::class, mappedBy: 'api_source', cascade: ['remove'])]
     private Collection $documents;
 
+    #[ORM\OneToMany(targetEntity: ApiEndpoint::class, mappedBy: 'api_source', cascade: ['remove'])]
+    private Collection $endpoints;
+
     public function __construct(User $user, string $name, string $url_base)
     {
         $this->user = $user;
@@ -59,6 +62,7 @@ class ApiSource
         $this->created_at = new \DateTimeImmutable();
         $this->updated_at = new \DateTimeImmutable();
         $this->documents = new ArrayCollection();
+        $this->endpoints = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -162,5 +166,10 @@ class ApiSource
     public function getDocuments(): Collection
     {
         return $this->documents;
+    }
+
+    public function getEndpoints(): Collection
+    {
+        return $this->endpoints;
     }
 }

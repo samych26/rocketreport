@@ -7,8 +7,7 @@ export interface Build {
     name: string;
     description?: string | null;
     api_source: { id: number; name: string; url: string };
-    endpoint: string;
-    method: string;
+    api_endpoint: { id: number; path: string; method: string };
     status: string;
     code?: string | null;
     template?: { id: number; name: string; format: string } | null;
@@ -19,9 +18,7 @@ export interface Build {
 export interface BuildPayload {
     name: string;
     description?: string;
-    api_source_id: number;
-    endpoint: string;
-    method: string;
+    api_endpoint_id: number;
     code: string;
     language?: string;
     template_id?: number | null;
@@ -64,8 +61,9 @@ export const buildService = {
     },
 
     previewData: async (params: {
-        api_source_id: number;
-        endpoint: string;
+        api_endpoint_id?: number;
+        api_source_id?: number;
+        endpoint?: string;
         method?: string;
         query_params?: Record<string, string>;
         body?: any;

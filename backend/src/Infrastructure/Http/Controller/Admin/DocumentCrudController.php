@@ -27,7 +27,7 @@ class DocumentCrudController extends AbstractCrudController
             ->setEntityLabelInSingular('Document')
             ->setEntityLabelInPlural('Documents')
             ->setDefaultSort(['created_at' => 'DESC'])
-            ->setSearchFields(['name', 'endpoint']);
+            ->setSearchFields(['name']);
     }
 
     public function configureFields(string $pageName): iterable
@@ -36,9 +36,6 @@ class DocumentCrudController extends AbstractCrudController
         yield AssociationField::new('user', 'Utilisateur');
         yield AssociationField::new('api_source', 'Source API');
         yield TextField::new('name', 'Nom');
-        yield TextField::new('endpoint', 'Endpoint');
-        yield ChoiceField::new('method', 'Méthode HTTP')
-            ->setChoices(['GET' => 'GET', 'POST' => 'POST', 'PUT' => 'PUT', 'DELETE' => 'DELETE']);
         yield ChoiceField::new('status', 'Statut')
             ->setChoices(['Actif' => 'active', 'Inactif' => 'inactive'])
             ->renderAsBadges(['active' => 'success', 'inactive' => 'danger']);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controller\Build;
 
 use App\Application\Service\ApiSourceService;
+use App\Application\Service\ApiEndpointService;
 use App\Application\Service\CodeProcessorService;
 use App\Application\Service\DocumentGenerationService;
 use App\Application\Service\DocumentService;
@@ -26,6 +27,7 @@ final class BuildController extends AbstractController
     public function __construct(
         private DocumentService           $documentService,
         private ApiSourceService          $apiSourceService,
+        private ApiEndpointService        $apiEndpointService,
         private CodeProcessorService      $codeProcessorService,
         private TemplateService           $templateService,
         private DocumentGenerationService $generationService,
@@ -50,23 +52,23 @@ final class BuildController extends AbstractController
         $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
 
-        foreach (['name', 'api_source_id', 'endpoint', 'code'] as $f) {
+        foreach (['name', 'api_endpoint_id', 'code'] as $f) {
             if (empty($data[$f])) {
                 return $this->json(['error' => "Le champ \"{$f}\" est requis."], Response::HTTP_BAD_REQUEST);
             }
         }
 
-        $apiSource = $this->apiSourceService->getApiSource((int)$data['api_source_id'], $user);
-        if (!$apiSource) {
-            return $this->json(['error' => 'Source API introuvable.'], Response::HTTP_NOT_FOUND);
+        $apiEndpoint = $this->apiEndpointService->getApiEndpointByIdAndUser((int)$data['api_endpoint_id'], $user);
+        if (!$apiEndpoint) {
+            return $this->json(['error' => 'API Endpoint introuvable ou vous ne le possédez pas.'], Response::HTTP_NOT_FOUND);
         }
 
         $document = $this->documentService->createDocument(
-            $user, $apiSource,
-            $data['name'], $data['endpoint'],
-            $data['method'] ?? 'GET',
+            $user, 
+            $apiEndpoint->getApiSource(), 
+            $apiEndpoint, 
+            $data['name']
         );
-
         if (!empty($data['description'])) {
             $document->setDescription($data['description']);
         }
@@ -97,10 +99,14 @@ final class BuildController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        $docFields = array_intersect_key($data, array_flip(['name','description','endpoint','method','status']));
-        if ($docFields) {
-            $this->documentService->updateDocument($document, $docFields);
+        $docFields = array_intersect_key($data, array_flip(['name','description','status']));
+        if (isset($data['api_endpoint_id'])) {
+            $apiEndpoint = $this->apiEndpointService->getApiEndpointByIdAndUser((int)$data['api_endpoint_id'], $user);
+            if ($apiEndpoint) {
+                $docFields['api_endpoint'] = $apiEndpoint;
+            }
         }
+        $this->documentService->updateDocument($document, $docFields);
 
         if (isset($data['code'])) {
             $cp = $this->codeProcessorService->getCodeProcessorByDocument($document);
@@ -151,18 +157,40 @@ final class BuildController extends AbstractController
         $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['api_source_id']) || empty($data['endpoint'])) {
-            return $this->json(['error' => 'api_source_id et endpoint sont requis.'], Response::HTTP_BAD_REQUEST);
+        $apiSource = null;
+        $path = '';
+        $method = 'GET';
+        $queryParams = [];
+        $headers = [];
+        $body = null;
+
+        if (!empty($data['api_endpoint_id'])) {
+            $apiEndpoint = $this->apiEndpointService->getApiEndpointByIdAndUser((int)$data['api_endpoint_id'], $user);
+            if (!$apiEndpoint) {
+                return $this->json(['error' => 'API Endpoint introuvable.'], Response::HTTP_NOT_FOUND);
+            }
+            $apiSource = $apiEndpoint->getApiSource();
+            $path = $apiEndpoint->getPath();
+            $method = $apiEndpoint->getMethod();
+            $queryParams = $apiEndpoint->getQueryParams() ?? [];
+        } else {
+            if (empty($data['api_source_id']) || empty($data['endpoint'])) {
+                return $this->json(['error' => 'api_source_id et endpoint (ou api_endpoint_id) sont requis.'], Response::HTTP_BAD_REQUEST);
+            }
+            $apiSource = $this->apiSourceService->getApiSource((int)$data['api_source_id'], $user);
+            $path = $data['endpoint'];
+            $method = $data['method'] ?? 'GET';
+            $queryParams = $data['query_params'] ?? [];
+            $body = $data['body'] ?? null;
         }
 
-        $apiSource = $this->apiSourceService->getApiSource((int)$data['api_source_id'], $user);
         if (!$apiSource) {
             return $this->json(['error' => 'Source API introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
-        $url     = rtrim($apiSource->getUrlBase(), '/') . '/' . ltrim($data['endpoint'], '/');
-        $method  = strtoupper($data['method'] ?? 'GET');
-        $options = ['headers' => [], 'timeout' => 10];
+        $url = rtrim($apiSource->getUrlBase(), '/') . '/' . ltrim($path, '/');
+        $method  = strtoupper($method);
+        $options = ['headers' => [], 'timeout' => 10, 'query' => $queryParams];
 
         match ($apiSource->getAuthType()) {
             'bearer'  => $options['headers']['Authorization'] = 'Bearer ' . $apiSource->getAuthToken(),
@@ -175,9 +203,8 @@ final class BuildController extends AbstractController
             $options['headers'][$k] = $v;
         }
 
-        if (!empty($data['query_params'])) { $options['query'] = $data['query_params']; }
-        if (!empty($data['body']) && in_array($method, ['POST','PUT','PATCH'], true)) {
-            $options['json'] = $data['body'];
+        if ($body && in_array($method, ['POST','PUT','PATCH'], true)) {
+            $options['json'] = $body;
         }
 
         try {
@@ -210,6 +237,64 @@ final class BuildController extends AbstractController
         }
         $result = $this->sandboxService->test($data['code'], $data['data'] ?? [], $data['language'] ?? 'javascript');
         return $this->json($result);
+    }
+
+    /**
+     * GET /api/builds/{id}/data
+     * Récupère la donnée depuis l'API sans générer de document
+     */
+    #[Route('/{id}/data', name: 'builds_fetch_data', methods: ['GET'])]
+    public function fetchData(int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $document = $this->documentService->getDocument($id, $user);
+        if (!$document) {
+            return $this->json(['error' => 'Build introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $apiEndpoint = $document->getApiEndpoint();
+        $apiSource = $apiEndpoint->getApiSource();
+
+        $url = rtrim($apiSource->getUrlBase(), '/') . '/' . ltrim($apiEndpoint->getPath(), '/');
+        $options = [
+            'query' => $apiEndpoint->getQueryParams() ?? [],
+            'headers' => []
+        ];
+
+        match ($apiSource->getAuthType()) {
+            'bearer'  => $options['headers']['Authorization'] = 'Bearer ' . $apiSource->getAuthToken(),
+            'api_key' => $options['headers']['X-API-Key']     = $apiSource->getAuthToken(),
+            'basic'   => $options['headers']['Authorization'] = 'Basic ' . base64_encode((string)$apiSource->getAuthToken()),
+            default   => null,
+        };
+
+        foreach ($apiSource->getHeaders() ?? [] as $k => $v) {
+            $options['headers'][$k] = $v;
+        }
+
+        try {
+            $client   = new Client(['http_errors' => false]);
+            $response = $client->request($apiEndpoint->getMethod(), $url, $options);
+            $body     = $response->getBody()->getContents();
+            $decoded  = json_decode($body, true);
+            
+            // Appliquer le filtre des variables configuré dans ApiEndpoint
+            if ($decoded !== null && !empty($apiEndpoint->getVariables())) {
+                $varsToKeep = $apiEndpoint->getVariables();
+                if (isset($decoded[0]) && is_array($decoded[0])) {
+                    $decoded = array_map(function($item) use ($varsToKeep) {
+                        return array_intersect_key($item, array_flip($varsToKeep));
+                    }, $decoded);
+                } else {
+                    $decoded = array_intersect_key($decoded, array_flip($varsToKeep));
+                }
+            }
+
+            return $this->json($decoded ?? $body);
+        } catch (\Throwable $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
     }
 
     /**
@@ -276,6 +361,7 @@ final class BuildController extends AbstractController
     {
         $tpl = $doc->getTemplate();
         $cp  = $doc->getCodeProcessor();
+        $endpoint = $doc->getApiEndpoint();
 
         return [
             'id'          => $doc->getId(),
@@ -286,8 +372,11 @@ final class BuildController extends AbstractController
                 'name' => $doc->getApiSource()->getName(),
                 'url'  => $doc->getApiSource()->getUrlBase(),
             ],
-            'endpoint'    => $doc->getEndpoint(),
-            'method'      => $doc->getMethod(),
+            'api_endpoint' => [
+                'id' => $endpoint->getId(),
+                'path' => $endpoint->getPath(),
+                'method' => $endpoint->getMethod(),
+            ],
             'status'      => $doc->getStatus(),
             'code'        => $cp?->getCode(),
             'template'    => $tpl ? [

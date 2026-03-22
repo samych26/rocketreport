@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import {
     Plus, Hammer, Trash2, Pencil, Play, RefreshCw,
     ChevronRight, ChevronLeft, Check, Plug, FileCode,
-    Loader2, AlertCircle, CheckCircle2, Terminal,
+    Loader2, AlertCircle, CheckCircle2, Terminal, Globe
 } from 'lucide-react';
 import { buildService } from '../services/buildService';
 import type { Build, BuildPayload, PreviewResult, RunCodeResult } from '../services/buildService';
 import { apiSourceService } from '../services/apiSourceService';
-import type { ApiSource } from '../services/apiSourceService';
+import type { ApiSource, ApiEndpoint } from '../services/apiSourceService';
 import { templateService } from '../services/templateService';
 import type { Template } from '../services/templateService';
 import MainLayout from '../layouts/MainLayout';
@@ -73,12 +73,25 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
     const isEditing = !!editing;
     const [step, setStep] = useState<Step>(1);
 
-    /* Step 1 — API Source */
-    const [sourceId, setSourceId]       = useState<number | null>(editing?.api_source.id ?? null);
-    const [endpoint, setEndpoint]       = useState(editing?.endpoint ?? '');
-    const [method, setMethod]           = useState(editing?.method ?? 'GET');
-    const [preview, setPreview]         = useState<PreviewResult | null>(null);
-    const [fetching, setFetching]       = useState(false);
+    /* Step 1 — API Source & Endpoint */
+    const [sourceId, setSourceId]           = useState<number | null>(editing?.api_source.id ?? null);
+    const [endpoints, setEndpoints]         = useState<ApiEndpoint[]>([]);
+    const [endpointId, setEndpointId]       = useState<number | null>(editing?.api_endpoint.id ?? null);
+    const [preview, setPreview]             = useState<PreviewResult | null>(null);
+    const [fetching, setFetching]           = useState(false);
+    const [loadingEndpoints, setLoadingEP]  = useState(false);
+
+    useEffect(() => {
+        if (sourceId) {
+            setLoadingEP(true);
+            apiSourceService.listEndpoints(sourceId)
+                .then(setEndpoints)
+                .finally(() => setLoadingEP(false));
+        } else {
+            setEndpoints([]);
+            setEndpointId(null);
+        }
+    }, [sourceId]);
 
     /* Step 2 — Code */
     const [language, setLanguage]       = useState<Language>('javascript');
@@ -105,11 +118,11 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
 
     /* ── Step 1 : fetch preview ── */
     const fetchPreview = async () => {
-        if (!sourceId || !endpoint) return;
+        if (!endpointId) return;
         setFetching(true);
         setPreview(null);
         try {
-            const result = await buildService.previewData({ api_source_id: sourceId, endpoint, method });
+            const result = await buildService.previewData({ api_endpoint_id: endpointId });
             setPreview(result);
         } catch {
             setPreview({ success: false, error: 'Erreur réseau' });
@@ -137,7 +150,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
     const handleSave = async () => {
         if (!name.trim()) { setError('Le nom du build est requis.'); return; }
         if (!sourceId)    { setError('Sélectionnez une source API.'); return; }
-        if (!endpoint)    { setError("L'endpoint est requis."); return; }
+        if (!endpointId)  { setError("L'endpoint est requis."); return; }
         if (!code.trim()) { setError('Le code de transformation est requis.'); return; }
 
         setSaving(true);
@@ -145,7 +158,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
         try {
             await onSave({
                 name, description: description || undefined,
-                api_source_id: sourceId, endpoint, method,
+                api_endpoint_id: endpointId!,
                 code, language, template_id: templateId ?? undefined,
             }, editing?.id);
         } catch (err: any) {
@@ -156,7 +169,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
     };
 
     const canNext: Record<Step, boolean> = {
-        1: !!sourceId && !!endpoint,
+        1: !!sourceId && !!endpointId,
         2: code.trim().length > 10,
         3: true,
         4: true,
@@ -219,20 +232,32 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
 
                             {sourceId && (
                                 <div className="endpoint-config">
-                                    <div className="endpoint-row">
-                                        <select value={method} onChange={e => setMethod(e.target.value)} className="method-select">
-                                            {['GET','POST','PUT','PATCH','DELETE'].map(m => (
-                                                <option key={m} value={m}>{m}</option>
+                                    <h4 className="config-subtitle">Choisissez un endpoint</h4>
+                                    {loadingEndpoints ? (
+                                        <div className="loading-mini">Chargement des endpoints…</div>
+                                    ) : endpoints.length === 0 ? (
+                                        <p className="no-data-mini">Aucun endpoint défini pour cette source.</p>
+                                    ) : (
+                                        <div className="endpoint-select-grid">
+                                            {endpoints.map(ep => (
+                                                <div key={ep.id} 
+                                                    className={`endpoint-select-card ${endpointId === ep.id ? 'selected' : ''}`}
+                                                    onClick={() => setEndpointId(ep.id)}>
+                                                    <span className={`method-badge method-${ep.method.toLowerCase()}`}>{ep.method}</span>
+                                                    <span className="ep-path">{ep.path}</span>
+                                                    <div className="ep-name">{ep.name}</div>
+                                                </div>
                                             ))}
-                                        </select>
-                                        <div className="url-preview-prefix">{selectedSource?.url_base}/</div>
-                                        <input className="endpoint-input" type="text"
-                                            placeholder="users, reports/monthly…"
-                                            value={endpoint} onChange={e => setEndpoint(e.target.value)} />
-                                        <button className="btn-fetch" onClick={fetchPreview} disabled={!endpoint || fetching}>
-                                            {fetching ? <Loader2 size={15} className="spin" /> : 'Tester'}
-                                        </button>
-                                    </div>
+                                        </div>
+                                    )}
+
+                                    {endpointId && (
+                                        <div className="endpoint-preview-action">
+                                            <button className="btn-fetch" onClick={fetchPreview} disabled={fetching}>
+                                                {fetching ? <Loader2 size={15} className="spin" /> : 'Tester l\'endpoint'}
+                                            </button>
+                                        </div>
+                                    )}
 
                                     {preview && (
                                         <div className={`preview-box ${preview.success ? 'ok' : 'err'}`}>
@@ -376,7 +401,10 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
                             {/* Summary */}
                             <div className="build-summary">
                                 <div className="summary-row">
-                                    <Plug size={14}/> <strong>Source :</strong> {selectedSource?.name} — <code>{method} /{endpoint}</code>
+                                    <Plug size={14}/> <strong>Source :</strong> {selectedSource?.name}
+                                </div>
+                                <div className="summary-row">
+                                    <Globe size={14}/> <strong>Endpoint :</strong> {endpoints.find(e => e.id === endpointId)?.path}
                                 </div>
                                 <div className="summary-row">
                                     <Terminal size={14}/> <strong>Code :</strong> {code.split('\n').length} lignes
@@ -534,8 +562,8 @@ const BuildPage = () => {
                                         <div className="build-meta-row">
                                             <Plug size={13}/>
                                             <span>{build.api_source.name}</span>
-                                            <code className="build-method">{build.method}</code>
-                                            <code className="build-endpoint">/{build.endpoint}</code>
+                                            <code className="build-method">{build.api_endpoint.method}</code>
+                                            <code className="build-endpoint">/{build.api_endpoint.path}</code>
                                         </div>
                                         {build.template && (
                                             <div className="build-meta-row">

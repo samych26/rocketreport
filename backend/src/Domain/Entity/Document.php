@@ -31,21 +31,9 @@ class Document
     #[ORM\Column(type: 'string', length: 1000, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: 'string', length: 500)]
-    private string $endpoint;
-
-    #[ORM\Column(type: 'string', length: 10)]
-    private string $method = 'GET'; // GET, POST, PUT, PATCH, DELETE
-
-    // ✨ Nouveaux champs pour les paramètres
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $query_params = null; // { "page": { "type": "integer", "required": false } }
-
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $path_params = null; // { "studentId": { "type": "integer", "required": true } }
-
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $body_schema = null; // { "name": { "type": "string", "required": true } }
+    #[ORM\ManyToOne(targetEntity: ApiEndpoint::class, inversedBy: 'documents')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private ApiEndpoint $api_endpoint;
 
     #[ORM\Column(type: 'string', length: 50)]
     private string $status = 'active'; // active, inactive, archived
@@ -68,13 +56,12 @@ class Document
     #[ORM\OneToMany(targetEntity: DocumentGeneration::class, mappedBy: 'document', cascade: ['remove'])]
     private Collection $generations;
 
-    public function __construct(User $user, ApiSource $api_source, string $name, string $endpoint, string $method = 'GET')
+    public function __construct(User $user, ApiSource $api_source, ApiEndpoint $api_endpoint, string $name)
     {
         $this->user = $user;
         $this->api_source = $api_source;
+        $this->api_endpoint = $api_endpoint;
         $this->name = $name;
-        $this->endpoint = $endpoint;
-        $this->method = $method;
         $this->created_at = new \DateTimeImmutable();
         $this->updated_at = new \DateTimeImmutable();
         $this->variables = new ArrayCollection();
@@ -119,58 +106,14 @@ class Document
         return $this;
     }
 
-    public function getEndpoint(): string
+    public function getApiEndpoint(): ApiEndpoint
     {
-        return $this->endpoint;
+        return $this->api_endpoint;
     }
 
-    public function setEndpoint(string $endpoint): self
+    public function setApiEndpoint(ApiEndpoint $api_endpoint): self
     {
-        $this->endpoint = $endpoint;
-        return $this;
-    }
-
-    public function getMethod(): string
-    {
-        return $this->method;
-    }
-
-    public function setMethod(string $method): self
-    {
-        $this->method = $method;
-        return $this;
-    }
-
-    public function getQueryParams(): ?array
-    {
-        return $this->query_params;
-    }
-
-    public function setQueryParams(?array $query_params): self
-    {
-        $this->query_params = $query_params;
-        return $this;
-    }
-
-    public function getPathParams(): ?array
-    {
-        return $this->path_params;
-    }
-
-    public function setPathParams(?array $path_params): self
-    {
-        $this->path_params = $path_params;
-        return $this;
-    }
-
-    public function getBodySchema(): ?array
-    {
-        return $this->body_schema;
-    }
-
-    public function setBodySchema(?array $body_schema): self
-    {
-        $this->body_schema = $body_schema;
+        $this->api_endpoint = $api_endpoint;
         return $this;
     }
 

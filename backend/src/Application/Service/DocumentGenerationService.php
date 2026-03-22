@@ -157,24 +157,25 @@ final class DocumentGenerationService
             $logs[] = "Template found: " . $template->getId();
 
             // 3. Préparer l'appel API
-            $apiSource = $document->getApiSource();
+            $apiEndpoint = $document->getApiEndpoint();
+            $apiSource = $apiEndpoint->getApiSource();
             $baseUrl = rtrim($apiSource->getUrlBase(), '/');
-            $endpoint = $document->getEndpoint();
+            $endpointPath = $apiEndpoint->getPath();
             
             // Remplacer les path params
-            foreach ($input_params as $key => $value) {
-                if (is_scalar($value) && str_contains($endpoint, '{' . $key . '}')) {
-                    $endpoint = str_replace('{' . $key . '}', (string)$value, $endpoint);
+            foreach ((array)$input_params as $key => $value) {
+                if (is_scalar($value) && str_contains($endpointPath, '{' . $key . '}')) {
+                    $endpointPath = str_replace('{' . $key . '}', (string)$value, $endpointPath);
                 }
             }
             
-            $url = $baseUrl . '/' . ltrim($endpoint, '/');
+            $url = $baseUrl . '/' . ltrim($endpointPath, '/');
             $logs[] = "Fetching data from: $url";
 
             // 4. Appel API
             $client = new Client();
             $requestOptions = [
-                'query' => $document->getQueryParams(),
+                'query' => $apiEndpoint->getQueryParams() ?? [],
                 'headers' => []
             ];
 
@@ -202,7 +203,7 @@ final class DocumentGenerationService
             }
 
             try {
-                $response = $client->request($document->getMethod(), $url, $requestOptions);
+                $response = $client->request($apiEndpoint->getMethod(), $url, $requestOptions);
                 $apiData = json_decode($response->getBody()->getContents(), true);
                 
                 if (json_last_error() !== JSON_ERROR_NONE) {
@@ -221,10 +222,24 @@ final class DocumentGenerationService
                 throw new \RuntimeException("API request failed: " . $e->getMessage());
             }
 
-            // 5. Extraction des variables
-            // TODO: Implémenter extraction via DocumentVariableService si nécessaire
-            // Pour l'instant on utilise toute la réponse API comme base
-            $processedData = $apiData;
+            // 5. Extraction des variables via configuration de l'Endpoint
+            if (empty($input_params['_override_data']) && !empty($apiEndpoint->getVariables())) {
+                $filteredData = [];
+                $varsToKeep = $apiEndpoint->getVariables();
+                
+                // Filtre simple au premier niveau (tableau d'objets ou objet)
+                if (isset($apiData[0]) && is_array($apiData[0])) {
+                    $filteredData = array_map(function($item) use ($varsToKeep) {
+                        return array_intersect_key($item, array_flip($varsToKeep));
+                    }, $apiData);
+                } else {
+                    $filteredData = array_intersect_key($apiData, array_flip($varsToKeep));
+                }
+                $processedData = $filteredData;
+                $logs[] = "Variables filtered based on ApiEndpoint configuration.";
+            } else {
+                $processedData = $apiData;
+            }
             
             // 6. Exécution du Code Processor (si présent)
             $codeProcessor = $this->codeProcessorService->getCodeProcessorByDocument($document);
