@@ -63,6 +63,7 @@ RUN echo "APP_ENV=prod" > /var/www/html/.env
 
 # Re-run autoloader now that all files are present
 RUN composer dump-autoload --optimize --no-dev
+RUN php bin/console assets:install public
 
 # Install sandbox npm dependencies
 RUN cd /var/www/html/scripts && npm install --omit=dev
