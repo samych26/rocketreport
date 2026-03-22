@@ -158,6 +158,9 @@ final class DocumentGenerationService
 
             // 3. Préparer l'appel API
             $apiEndpoint = $document->getApiEndpoint();
+            if (!$apiEndpoint) {
+                throw new \RuntimeException("This build has no endpoint configured. Please edit the build to select an endpoint.");
+            }
             $apiSource = $apiEndpoint->getApiSource();
             $baseUrl = rtrim($apiSource->getUrlBase(), '/');
             $endpointPath = $apiEndpoint->getPath();

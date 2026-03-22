@@ -32,8 +32,8 @@ class Document
     private ?string $description = null;
 
     #[ORM\ManyToOne(targetEntity: ApiEndpoint::class, inversedBy: 'documents')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ApiEndpoint $api_endpoint;
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?ApiEndpoint $api_endpoint = null;
 
     #[ORM\Column(type: 'string', length: 50)]
     private string $status = 'active'; // active, inactive, archived
@@ -56,7 +56,7 @@ class Document
     #[ORM\OneToMany(targetEntity: DocumentGeneration::class, mappedBy: 'document', cascade: ['remove'])]
     private Collection $generations;
 
-    public function __construct(User $user, ApiSource $api_source, ApiEndpoint $api_endpoint, string $name)
+    public function __construct(User $user, ApiSource $api_source, ?ApiEndpoint $api_endpoint, string $name)
     {
         $this->user = $user;
         $this->api_source = $api_source;
@@ -106,12 +106,12 @@ class Document
         return $this;
     }
 
-    public function getApiEndpoint(): ApiEndpoint
+    public function getApiEndpoint(): ?ApiEndpoint
     {
         return $this->api_endpoint;
     }
 
-    public function setApiEndpoint(ApiEndpoint $api_endpoint): self
+    public function setApiEndpoint(?ApiEndpoint $api_endpoint): self
     {
         $this->api_endpoint = $api_endpoint;
         return $this;

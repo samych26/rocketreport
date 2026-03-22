@@ -76,7 +76,7 @@ const BuildWizard = ({ editing, apiSources, templates, onSave, onCancel }: Wizar
     /* Step 1 — API Source & Endpoint */
     const [sourceId, setSourceId]           = useState<number | null>(editing?.api_source.id ?? null);
     const [endpoints, setEndpoints]         = useState<ApiEndpoint[]>([]);
-    const [endpointId, setEndpointId]       = useState<number | null>(editing?.api_endpoint.id ?? null);
+    const [endpointId, setEndpointId]       = useState<number | null>(editing?.api_endpoint?.id ?? null);
     const [preview, setPreview]             = useState<PreviewResult | null>(null);
     const [fetching, setFetching]           = useState(false);
     const [loadingEndpoints, setLoadingEP]  = useState(false);

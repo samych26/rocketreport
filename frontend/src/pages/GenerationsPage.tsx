@@ -103,8 +103,8 @@ const BuildRow = ({ build }: BuildRowProps) => {
                     <div className="gen-build-meta">
                         <Plug size={12}/>
                         <span>{build.api_source.name}</span>
-                        <code className="build-method">{build.method}</code>
-                        <code className="build-endpoint">/{build.endpoint}</code>
+                        <code className="build-method">{build.api_endpoint?.method ?? '—'}</code>
+                        <code className="build-endpoint">/{build.api_endpoint?.path ?? 'non-configuré'}</code>
                         {build.template && (
                             <>
                                 <FileCode size={12}/>
