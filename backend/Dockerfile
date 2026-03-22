@@ -63,8 +63,9 @@ RUN composer dump-autoload --optimize --no-dev
 
 # Create minimal .env for build-time Symfony commands
 # DATABASE_URL placeholder prevents kernel boot crash — real value comes from runtime env
+# SQLite is used here to avoid any network/socket connection during build
 RUN echo "APP_ENV=prod" > /var/www/html/.env \
-    && echo "DATABASE_URL=mysql://build:build@localhost:3306/build" >> /var/www/html/.env \
+    && echo 'DATABASE_URL=sqlite:////tmp/dummy_build.db' >> /var/www/html/.env \
     && php bin/console assets:install public --no-debug \
     && echo "" > /var/www/html/.env
 
