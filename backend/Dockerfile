@@ -41,7 +41,7 @@ RUN echo '<VirtualHost *:80>\n\
     <Directory /var/www/html/public>\n\
         AllowOverride All\n\
         Require all granted\n\
-        Options -Indexes\n\
+        Options -Indexes +FollowSymLinks\n\
     </Directory>\n\
     Header always set Cross-Origin-Opener-Policy "unsafe-none"\n\
     Header always set Cross-Origin-Embedder-Policy "unsafe-none"\n\
