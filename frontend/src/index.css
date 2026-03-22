@@ -13,6 +13,7 @@
   --accent-hover: #b88d5e;
   --border-color: #e8e3dc;
   --nav-bg: rgba(253, 251, 247, 0.85);
+  --bg-secondary-rgb: 244, 241, 234;
 
   color-scheme: light dark;
   color: var(--text-primary);
@@ -34,6 +35,7 @@
   --accent-hover: #f5dfbf;
   --border-color: #3f3f4e;
   --nav-bg: rgba(30, 30, 36, 0.85);
+  --bg-secondary-rgb: 43, 43, 54;
 }
 
 body {

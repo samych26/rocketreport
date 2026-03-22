@@ -1,4 +1,5 @@
-import { Globe, Sun, Moon, Settings, User } from 'lucide-react';
+import { useState } from 'react';
+import { Globe, Sun, Moon, Settings, User, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../hooks/useLanguage';
@@ -11,6 +12,14 @@ const Navbar = () => {
     const { language, setLanguage, t } = useLanguage();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const closeMenu = () => setIsMenuOpen(false);
+
+    const handleNavigate = (path: string) => {
+        navigate(path);
+        closeMenu();
+    };
 
     return (
         <header className="navbar">
@@ -18,14 +27,26 @@ const Navbar = () => {
                 {/* Page title injected via CSS / can be extended with context */}
             </div>
 
-            <div className="navbar-controls">
+            {/* Mobile Toggle */}
+            <button
+                className="navbar-mobile-toggle"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label="Toggle menu"
+            >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            <div className={`navbar-controls ${isMenuOpen ? 'is-open' : ''}`}>
                 {/* Language */}
                 <div className="navbar-control-item language-wrapper">
                     <Globe size={16} className="control-icon" />
                     <select
                         className="language-select"
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value as Language)}
+                        onChange={(e) => {
+                            setLanguage(e.target.value as Language);
+                            closeMenu();
+                        }}
                         aria-label={t('language')}
                     >
                         <option value="fr">FR</option>
@@ -36,7 +57,10 @@ const Navbar = () => {
                 {/* Theme toggle */}
                 <button
                     className="navbar-icon-btn"
-                    onClick={toggleTheme}
+                    onClick={() => {
+                        toggleTheme();
+                        closeMenu();
+                    }}
                     aria-label={t('theme')}
                     title={t('theme')}
                 >
@@ -44,12 +68,12 @@ const Navbar = () => {
                 </button>
 
                 {/* Settings */}
-                <button className="navbar-icon-btn" aria-label="Settings" title="Paramètres" onClick={() => navigate('/settings')}>
+                <button className="navbar-icon-btn" aria-label="Settings" title="Paramètres" onClick={() => handleNavigate('/settings')}>
                     <Settings size={18} />
                 </button>
 
                 {/* Profile */}
-                <button className="navbar-profile-btn" aria-label="Profile" title={user?.name || user?.email || 'Profile'}>
+                <button className="navbar-profile-btn" aria-label="Profile" title={user?.name || user?.email || 'Profile'} onClick={() => handleNavigate('/settings')}>
                     <div className="profile-avatar">
                         <User size={16} />
                     </div>

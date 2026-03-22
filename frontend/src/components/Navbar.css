@@ -128,8 +128,75 @@
 }
 
 /* Mobile : la sidebar gère déjà toute la nav, on masque la navbar */
-@media (max-width: 600px) {
-  .navbar {
+.navbar-mobile-toggle {
     display: none;
-  }
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 1002;
+}
+
+@media (max-width: 600px) {
+    .navbar {
+        height: 60px;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 60px; /* Only take space for the burger */
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        z-index: 2000; /* Above sidebar */
+        padding: 0;
+        justify-content: center;
+    }
+    .navbar-left {
+        display: none;
+    }
+    .navbar-mobile-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .navbar-controls {
+        display: none; /* Hidden by default */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: rgba(var(--bg-secondary-rgb), 0.95);
+        backdrop-filter: blur(10px);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        padding: 2rem;
+        z-index: 2001; /* Above toggle */
+    }
+    .navbar-controls.is-open {
+        display: flex;
+        animation: slideInDown 0.3s ease;
+    }
+    .navbar-control-item,
+    .navbar-icon-btn,
+    .navbar-profile-btn {
+        width: 100%;
+        max-width: 250px;
+        justify-content: center;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 1.1rem;
+    }
+    .profile-name {
+        display: inline;
+    }
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }

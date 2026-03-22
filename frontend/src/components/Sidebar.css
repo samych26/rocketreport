@@ -98,16 +98,19 @@
 
 @media (max-width: 600px) {
   .sidebar {
-    position: fixed;
-    width: 100vw;
+    width: 100%;
     height: 60px;
-    min-height: 60px;
     flex-direction: row;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    position: fixed;
     top: 0;
     left: 0;
-    z-index: 100;
+    z-index: 1000;
+        padding: 0 60px; /* Balanced padding for center alignment */
+        background: var(--bg-secondary);
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        justify-content: center;
     overflow-x: auto;
     overflow-y: hidden;
   }
@@ -121,12 +124,13 @@
   }
   .sidebar-nav {
     flex-direction: row;
-    gap: 0.25rem;
-    padding: 0 0.5rem;
-    align-items: center;
+    padding: 0;
+    width: auto; /* Width auto to allow centering */
+    gap: 0;
     overflow-x: auto;
-    flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
+    justify-content: center;
+    align-items: center;
   }
   .sidebar-item {
     padding: 0.5rem 0.65rem;
