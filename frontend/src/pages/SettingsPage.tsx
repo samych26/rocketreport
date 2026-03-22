@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Lock, Palette, LogOut, Trash2, Check, Loader2, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Palette, LogOut, Trash2, Check, Loader2, Sun, Moon, Eye, EyeOff, Code, Copy, RefreshCw } from 'lucide-react';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -7,8 +7,14 @@ import api from '../services/api';
 import './SettingsPage.css';
 
 const SettingsPage = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, loginWithUser } = useAuth();
     const { theme, toggleTheme } = useTheme();
+
+    // API Key
+    const [apiKey, setApiKey] = useState(user?.api_token || '');
+    const [showApiKey, setShowApiKey] = useState(false);
+    const [apiKeyRegenerating, setApiKeyRegenerating] = useState(false);
+    const [apiKeyCopied, setApiKeyCopied] = useState(false);
 
     // Profile
     const [name, setName] = useState(user?.name || '');
@@ -75,6 +81,28 @@ const SettingsPage = () => {
             alert(e.response?.data?.error || 'Erreur lors de la suppression du compte.');
             setDeleting(false);
         }
+    };
+    const regenerateApiKey = async () => {
+        if (!window.confirm('Voulez-vous vraiment régénérer votre clé API ? L\'ancienne clé ne fonctionnera plus.')) return;
+        setApiKeyRegenerating(true);
+        try {
+            const response = await api.post('/auth/regenerate-api-token');
+            const newToken = response.data.api_token;
+            setApiKey(newToken);
+            if (user) {
+                loginWithUser({ ...user, api_token: newToken });
+            }
+        } catch (e: any) {
+            alert(e.response?.data?.error || 'Erreur lors de la régénération.');
+        } finally {
+            setApiKeyRegenerating(false);
+        }
+    };
+
+    const copyApiKey = () => {
+        navigator.clipboard.writeText(apiKey);
+        setApiKeyCopied(true);
+        setTimeout(() => setApiKeyCopied(false), 2000);
     };
 
     return (
@@ -184,7 +212,46 @@ const SettingsPage = () => {
                     </div>
                 </section>
 
-                {/* Appearance */}
+                {/* Developer / API Key */}
+                <section className="settings-section">
+                    <div className="settings-section-title">
+                        <Code size={16} />
+                        <span>Développeur</span>
+                    </div>
+                    <div className="settings-card">
+                        <p className="settings-card-desc">
+                            Utilisez votre clé API pour intégrer RocketReport dans vos applications ou via le package NPM.
+                        </p>
+                        <div className="settings-field">
+                            <label>Clé API</label>
+                            <div className="api-key-input-wrap">
+                                <input
+                                    type={showApiKey ? 'text' : 'password'}
+                                    value={apiKey}
+                                    readOnly
+                                    className="settings-input api-key-input"
+                                />
+                                <div className="api-key-actions">
+                                    <button className="api-key-btn" onClick={() => setShowApiKey(!showApiKey)} title={showApiKey ? 'Masquer' : 'Afficher'}>
+                                        {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                    <button className="api-key-btn" onClick={copyApiKey} title="Copier">
+                                        {apiKeyCopied ? <Check size={16} className="success-icon" /> : <Copy size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+                            <span className="field-hint">Gardez cette clé secrète !</span>
+                        </div>
+                        <button
+                            className="settings-btn-secondary"
+                            onClick={regenerateApiKey}
+                            disabled={apiKeyRegenerating}
+                        >
+                            {apiKeyRegenerating ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
+                            Régénérer la clé API
+                        </button>
+                    </div>
+                </section>
                 <section className="settings-section">
                     <div className="settings-section-title">
                         <Palette size={16} />

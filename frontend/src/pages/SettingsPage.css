@@ -46,6 +46,75 @@
     color: var(--text-primary);
 }
 
+.settings-card-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.api-key-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.api-key-input {
+    padding-right: 80px !important;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+}
+
+.api-key-actions {
+    position: absolute;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+}
+
+.api-key-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.api-key-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.success-icon {
+    color: #4caf50;
+}
+
+.settings-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    margin-top: 1rem;
+    transition: all 0.2s ease;
+}
+
+.settings-btn-secondary:hover:not(:disabled) {
+    background: var(--bg-primary);
+    border-color: var(--accent-color);
+}
+
 .field-hint {
     font-size: 0.78rem;
     color: var(--text-secondary);

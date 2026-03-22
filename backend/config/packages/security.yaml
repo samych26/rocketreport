@@ -41,6 +41,9 @@ security:
             stateless: true
             provider: app_user_provider
             jwt: ~
+            custom_authenticators:
+                - App\Infrastructure\Security\ApiTokenAuthenticator
+            entry_point: jwt
 
     # Note: Only the *first* matching rule is applied
     access_control:

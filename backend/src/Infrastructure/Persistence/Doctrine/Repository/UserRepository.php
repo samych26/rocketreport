@@ -43,5 +43,10 @@ class UserRepository extends ServiceEntityRepository implements UserRepositoryIn
     {
         return $this->findOneBy(['googleId' => $googleId]);
     }
+
+    public function findByApiToken(string $token): ?User
+    {
+        return $this->findOneBy(['apiToken' => $token]);
+    }
 }
 

@@ -284,7 +284,26 @@ class AuthController extends AbstractController
                 'email' => $user->getEmail(),
                 'name' => $user->getName(),
                 'roles' => $user->getRoles(),
+                'api_token' => $user->getApiToken(),
             ]
+        ]);
+    }
+
+    #[Route('/regenerate-api-token', name: 'api_auth_regenerate_api_token', methods: ['POST'])]
+    public function regenerateApiToken(): JsonResponse
+    {
+        /** @var \App\Domain\Entity\User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user->generateApiToken();
+        $this->userRepository->save($user);
+
+        return $this->json([
+            'message' => 'Clé API régénérée avec succès.',
+            'api_token' => $user->getApiToken(),
         ]);
     }
 
