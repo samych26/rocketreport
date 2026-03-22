@@ -3,9 +3,9 @@ import { Plus, Plug, Pencil, Trash2, RefreshCw, Zap, CheckCircle, XCircle, Clock
 import { apiSourceService } from '../services/apiSourceService';
 import type { ApiSource } from '../services/apiSourceService';
 import ApiSourceModal from '../components/ApiSourceModal';
-import ApiEndpointModal from '../components/ApiEndpointModal';
 import type { ApiSourcePayload } from '../services/apiSourceService';
 import MainLayout from '../layouts/MainLayout';
+import { useNavigate } from 'react-router-dom';
 import './PlaceholderPage.css';
 import './ApiSourcesPage.css';
 
@@ -28,7 +28,7 @@ const ApiSourcesPage = () => {
     const [editing, setEditing]       = useState<ApiSource | null>(null);
     const [testStates, setTestStates] = useState<Record<number, TestState>>({});
     const [testMsgs, setTestMsgs]     = useState<Record<number, string>>({});
-    const [showEndpoints, setShowEndpoints] = useState<ApiSource | null>(null);
+    const navigate = useNavigate();
 
     const load = async () => {
         setLoading(true);
@@ -140,7 +140,7 @@ const ApiSourcesPage = () => {
                                             <span className={`api-status-pill api-status-${src.status}`}>{src.status}</span>
                                         </div>
                                         <div className="api-card-actions">
-                                            <button className="tpl-action-btn" onClick={() => setShowEndpoints(src)} title="Gérer les Endpoints">
+                                            <button className="tpl-action-btn" onClick={() => navigate(`/api-sources/${src.id}/endpoints`)} title="Gérer les Endpoints">
                                                 <Globe size={13} />
                                             </button>
                                             <button className="tpl-action-btn" onClick={() => openEdit(src)} title="Modifier">
@@ -190,13 +190,6 @@ const ApiSourcesPage = () => {
                     editing={editing}
                     onSave={handleSave}
                     onClose={() => { setShowModal(false); setEditing(null); }}
-                />
-            )}
-            {showEndpoints && (
-                <ApiEndpointModal
-                    sourceId={showEndpoints.id}
-                    sourceName={showEndpoints.name}
-                    onClose={() => setShowEndpoints(null)}
                 />
             )}
         </MainLayout>

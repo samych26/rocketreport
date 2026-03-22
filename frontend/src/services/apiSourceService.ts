@@ -51,6 +51,11 @@ export const apiSourceService = {
         return res.data.data;
     },
 
+    get: async (id: number): Promise<ApiSource> => {
+        const res = await api.get(`/api-sources/${id}`);
+        return res.data.data;
+    },
+
     create: async (payload: ApiSourcePayload): Promise<ApiSource> => {
         const res = await api.post('/api-sources', payload);
         return res.data.data;
