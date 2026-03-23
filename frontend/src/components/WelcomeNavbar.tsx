@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
 import { Globe, Menu, X } from 'lucide-react';
-import type { Language } from '../context/LanguageContext';
 import './WelcomeNavbar.css';
 
 const WelcomeNavbar = () => {
