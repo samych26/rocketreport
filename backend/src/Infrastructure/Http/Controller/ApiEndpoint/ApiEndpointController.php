@@ -190,11 +190,32 @@ final class ApiEndpointController extends AbstractController
             $content = $response->getBody()->getContents();
             $data = json_decode($content, true);
 
+            $requestedVariables = $endpoint->getVariables();
+            $filteredData = [];
+            $missingVariables = [];
+
+            if (!empty($requestedVariables)) {
+                foreach ($requestedVariables as $var) {
+                    // Logique simple d'extraction (peut être étendue à la notation pointée si besoin)
+                    if (isset($data[$var])) {
+                        $filteredData[$var] = $data[$var];
+                    } else {
+                        $missingVariables[] = $var;
+                    }
+                }
+                $finalData = $filteredData;
+            } else {
+                $finalData = $data;
+            }
+
             return $this->json([
                 'success' => true,
                 'status_code' => $response->getStatusCode(),
-                'data' => $data,
-                'message' => 'Data retrieved successfully'
+                'data' => $finalData,
+                'missing_variables' => $missingVariables,
+                'message' => empty($missingVariables) 
+                    ? 'Données récupérées avec succès' 
+                    : 'Certaines variables sont manquantes'
             ], Response::HTTP_OK);
 
         } catch (\Exception $e) {

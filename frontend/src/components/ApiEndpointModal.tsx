@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Save, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { X, Save, Zap, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import { apiSourceService } from '../services/apiSourceService';
 import type { ApiEndpoint, ApiEndpointPayload } from '../services/apiSourceService';
-import './ApiSourceModal.css'; // On réutilise la base CSS des modales
+import './ApiSourceModal.css';
 
 interface ApiEndpointModalProps {
     sourceId: number;
@@ -20,7 +20,12 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
     
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; data?: any; error?: string } | null>(null);
+    const [testResult, setTestResult] = useState<{ 
+        success: boolean; 
+        data?: any; 
+        error?: string;
+        missing_variables?: string[];
+    } | null>(null);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,22 +57,20 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
 
     return (
         <div className="modal-overlay">
-            <div className="modal-container" style={{ maxWidth: '600px' }}>
+            <div className="modal-panel api-modal-panel">
                 <div className="modal-header">
-                    <div className="modal-title-wrapper">
-                        <div className="modal-icon">
-                            <Zap size={20} />
-                        </div>
+                    <div className="modal-title">
+                        <Zap size={20} />
                         <h2>{editing?.id ? 'Modifier le document' : 'Nouveau document'}</h2>
                     </div>
-                    <button className="modal-close-btn" onClick={onClose}>
+                    <button className="modal-close" onClick={onClose}>
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSave}>
+                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                     <div className="modal-body">
-                        <div className="form-group">
+                        <div className="form-field">
                             <label>Nom du document</label>
                             <input 
                                 type="text" 
@@ -78,8 +81,8 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
                             />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem' }}>
-                            <div className="form-group">
+                        <div className="modal-row">
+                            <div className="form-field form-field--sm">
                                 <label>Méthode</label>
                                 <select value={method} onChange={e => setMethod(e.target.value)}>
                                     {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => (
@@ -87,7 +90,7 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
                                     ))}
                                 </select>
                             </div>
-                            <div className="form-group">
+                            <div className="form-field">
                                 <label>Chemin (Path)</label>
                                 <input 
                                     type="text" 
@@ -99,7 +102,7 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
                             </div>
                         </div>
 
-                        <div className="form-group">
+                        <div className="form-field">
                             <label>Variables à extraire</label>
                             <div className="variable-input-container">
                                 <div className="variable-tags">
@@ -124,11 +127,14 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
                                     }}
                                 />
                             </div>
+                            <span className="field-hint">Si vide, toutes les données seront récupérées.</span>
                         </div>
 
-                        <div className="form-group">
+                        <div className="form-field">
                             <label>Description (optionnel)</label>
                             <textarea 
+                                className="template-editor"
+                                style={{ minHeight: '80px' }}
                                 value={description} 
                                 onChange={e => setDescription(e.target.value)}
                                 rows={2}
@@ -136,24 +142,32 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
                         </div>
 
                         {editing?.id && (
-                            <div className="test-section" style={{ marginTop: '1rem' }}>
+                            <div className="test-section" style={{ marginTop: '0.5rem' }}>
                                 <button 
                                     type="button" 
                                     className={`btn-test ${testing ? 'loading' : ''}`}
                                     onClick={handleTest}
                                     disabled={testing}
-                                    style={{ width: '100%', justifyContent: 'center', marginBottom: '1rem' }}
+                                    style={{ width: '100%', justifyContent: 'center', marginBottom: '1rem', padding: '0.6rem' }}
                                 >
                                     {testing ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
                                     Tester la récupération des données
                                 </button>
 
                                 {testResult && (
-                                    <div className={`test-result-box ${testResult.success ? 'success' : 'error'}`} style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                    <div className={`test-result-box ${testResult.success ? 'success' : 'error'}`} style={{ maxHeight: '250px', overflowY: 'auto' }}>
                                         <div className="test-result-header">
                                             {testResult.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
                                             {testResult.success ? 'Récupération réussie' : 'Échec du test'}
                                         </div>
+                                        
+                                        {testResult.missing_variables && testResult.missing_variables.length > 0 && (
+                                            <div className="modal-error" style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <AlertCircle size={14} />
+                                                <span>Variables manquantes : {testResult.missing_variables.join(', ')}</span>
+                                            </div>
+                                        )}
+
                                         {testResult.success ? (
                                             <pre className="test-result-data">{JSON.stringify(testResult.data, null, 2)}</pre>
                                         ) : (
@@ -165,13 +179,13 @@ const ApiEndpointModal = ({ sourceId, editing, onSave, onClose }: ApiEndpointMod
                         )}
                     </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn-secondary" onClick={onClose}>
+                    <div className="modal-footer" style={{ padding: '1.25rem 1.5rem' }}>
+                        <button type="button" className="btn-cancel" onClick={onClose}>
                             Annuler
                         </button>
-                        <button type="submit" className="btn-primary" disabled={saving || !name || !path}>
+                        <button type="submit" className="btn-save" disabled={saving || !name || !path}>
                             <Save size={18} />
-                            {saving ? 'Enregistrement...' : 'Enregistrer le document'}
+                            {saving ? 'Enregistrement...' : 'Enregistrer'}
                         </button>
                     </div>
                 </form>
