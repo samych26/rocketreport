@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Zap, CheckCircle, XCircle, Loader2, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Save, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { apiSourceService } from '../services/apiSourceService';
 import type { ApiEndpoint, ApiEndpointPayload } from '../services/apiSourceService';
 import './ApiSourceModal.css'; // On réutilise la base CSS des modales

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    X, Plus, Trash2, Globe, ArrowLeft, 
+    Plus, Trash2, ArrowLeft, 
     ChevronRight, AlertCircle, Loader2, Pencil, RefreshCw, FileText
 } from 'lucide-react';
 import { apiSourceService } from '../services/apiSourceService';
