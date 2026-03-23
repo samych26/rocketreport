@@ -37,9 +37,9 @@ const WelcomeNavbar = () => {
                     <a href="https://www.npmjs.com/package/rocketreport-mcp-server" target="_blank" rel="noopener noreferrer" className="welcome-nav-link">
                         {t('nav_npm')}
                     </a>
-                    <a href="https://github.com/votre-repo/rocketreport" target="_blank" rel="noopener noreferrer" className="welcome-nav-link">
+                    <Link to="/mcp-docs" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
                         {t('nav_docs')}
-                    </a>
+                    </Link>
                     
                     <div className="welcome-nav-divider" />
                     

@@ -105,6 +105,17 @@
   overflow: hidden;
 }
 
+/* Gradient to ensure navbar visibility */
+.welcome-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 180px;
+  background: linear-gradient(to bottom, rgba(4,4,11,0.8) 0%, transparent 100%);
+  z-index: 5;
+  pointer-events: none;
+}
+
 .welcome-hero-bg {
   position: absolute;
   inset: 0;
