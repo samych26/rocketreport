@@ -27,11 +27,12 @@
     }
 }
 
-/* Mobile : sidebar devient une barre en haut (60px) */
+/* Mobile : sidebar devient une barre en bas */
 @media (max-width: 600px) {
     .main-area {
         margin-left: 0;
-        padding-top: 60px; /* hauteur de la top-bar sidebar */
+        padding-top: 60px; /* Navbar height */
+        padding-bottom: 70px; /* Sidebar bottom height */
     }
     .main-content {
         padding: 1rem;

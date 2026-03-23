@@ -143,4 +143,65 @@ final class ApiEndpointController extends AbstractController
 
         return $this->json(['message' => 'API Endpoint deleted']);
     }
+
+    #[Route('/{id}/test', name: 'api_endpoints_test', methods: ['POST'])]
+    public function test(int $sourceId, int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $apiSource = $this->apiSourceService->getApiSource($sourceId, $user);
+        if (!$apiSource) {
+            return $this->json(['error' => 'API Source not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $endpoint = $this->apiEndpointService->getApiEndpoint($id, $apiSource);
+        if (!$endpoint) {
+            return $this->json(['error' => 'Api Endpoint not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $client = new \GuzzleHttp\Client();
+        $requestOptions = ['headers' => []];
+
+        // Authentification
+        switch ($apiSource->getAuthType()) {
+            case 'bearer':
+                $requestOptions['headers']['Authorization'] = 'Bearer ' . $apiSource->getAuthToken();
+                break;
+            case 'basic':
+                $requestOptions['headers']['Authorization'] = 'Basic ' . base64_encode($apiSource->getAuthToken());
+                break;
+            case 'api_key':
+                $requestOptions['headers']['X-API-Key'] = $apiSource->getAuthToken();
+                break;
+        }
+
+        // Headers custom
+        if ($apiSource->getHeaders()) {
+            foreach ($apiSource->getHeaders() as $key => $value) {
+                $requestOptions['headers'][$key] = $value;
+            }
+        }
+
+        $url = rtrim($apiSource->getUrlBase(), '/') . '/' . ltrim($endpoint->getPath(), '/');
+
+        try {
+            $response = $client->request($endpoint->getMethod(), $url, $requestOptions);
+            $content = $response->getBody()->getContents();
+            $data = json_decode($content, true);
+
+            return $this->json([
+                'success' => true,
+                'status_code' => $response->getStatusCode(),
+                'data' => $data,
+                'message' => 'Data retrieved successfully'
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
 }

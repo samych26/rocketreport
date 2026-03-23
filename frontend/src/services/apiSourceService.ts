@@ -94,4 +94,9 @@ export const apiSourceService = {
     deleteEndpoint: async (sourceId: number, id: number): Promise<void> => {
         await api.delete(`/api-sources/${sourceId}/endpoints/${id}`);
     },
+
+    testEndpoint: async (sourceId: number, id: number): Promise<TestResult & { data?: any }> => {
+        const res = await api.post(`/api-sources/${sourceId}/endpoints/${id}/test`);
+        return res.data;
+    },
 };

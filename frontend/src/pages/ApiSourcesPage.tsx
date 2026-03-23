@@ -132,10 +132,10 @@ const ApiSourcesPage = () => {
                             return (
                                 <div key={src.id} className="api-card">
                                     <div className="api-card-header">
-                                        <div className="api-card-icon">
+                                        <div className="api-card-icon" onClick={() => navigate(`/api-sources/${src.id}/endpoints`)} style={{ cursor: 'pointer' }}>
                                             <Plug size={16} />
                                         </div>
-                                        <div className="api-card-meta">
+                                        <div className="api-card-meta" onClick={() => navigate(`/api-sources/${src.id}/endpoints`)} style={{ cursor: 'pointer' }}>
                                             <span className="api-card-name">{src.name}</span>
                                             <span className={`api-status-pill api-status-${src.status}`}>{src.status}</span>
                                         </div>
@@ -152,7 +152,7 @@ const ApiSourcesPage = () => {
                                         </div>
                                     </div>
 
-                                    <div className="api-card-body">
+                                    <div className="api-card-body" onClick={() => navigate(`/api-sources/${src.id}/endpoints`)} style={{ cursor: 'pointer' }}>
                                         <p className="api-url">{src.url_base}</p>
                                         {src.description && <p className="api-desc">{src.description}</p>}
                                         <span className="api-auth-badge">{AUTH_LABELS[src.auth_type] ?? src.auth_type}</span>

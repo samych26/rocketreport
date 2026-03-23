@@ -24,7 +24,10 @@ const Navbar = () => {
     return (
         <header className="navbar">
             <div className="navbar-left">
-                {/* Page title injected via CSS / can be extended with context */}
+                <div className="navbar-logo-mobile">
+                    <span className="sidebar-logo-icon">🚀</span>
+                    <span className="sidebar-logo-text">RocketReport</span>
+                </div>
             </div>
 
             {/* Mobile Toggle */}
