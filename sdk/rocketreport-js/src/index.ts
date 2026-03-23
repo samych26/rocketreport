@@ -26,21 +26,13 @@ export interface ApiSourceData {
   auth_token?: string;
 }
 
-export interface BuildData {
-  /** Name of the build or document */
-  name: string;
-  /** ID of the associated API Endpoint */
-  api_endpoint_id: number;
-  /** Code or identifier for this build */
-  code: string;
-  /** ID of a template to use for rendering */
-  template_id?: number;
-}
+/** @deprecated Use ApiDocumentData instead */
+export type ApiEndpointData = ApiDocumentData;
 
-export interface ApiEndpointData {
-  /** Name of the Api Endpoint */
+export interface ApiDocumentData {
+  /** Name of the Document */
   name: string;
-  /** Path of the endpoint, appended to ApiSource base_url (e.g. /orders) */
+  /** Path of the document, appended to ApiSource base_url (e.g. /orders) */
   path: string;
   /** Method (e.g GET) */
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -59,13 +51,22 @@ export interface TemplateData {
   description?: string;
 }
 
+export interface TestResult {
+  success: boolean;
+  status_code?: number;
+  data?: any;
+  missing_variables?: string[];
+  message?: string;
+  error?: string;
+}
+
 /**
  * RocketReport SDK Client
  * 
  * @example
  * ```typescript
  * const client = new RocketReport('your-api-key');
- * const builds = await client.listBuilds();
+ * const sources = await client.listApiSources();
  * ```
  */
 export class RocketReport {
@@ -81,6 +82,7 @@ export class RocketReport {
     this.client = axios.create({
       baseURL: baseUrl.replace(/\/$/, ''),
       headers: {
+        'Authorization': `Bearer ${apiKey}`, // Assuming API Key is used as Bearer or custom header
         'X-API-KEY': apiKey,
         'Content-Type': 'application/json',
       },
@@ -102,108 +104,71 @@ export class RocketReport {
     );
   }
 
+  // ── API Sources ──────────────────────────────────────────────────────────
+
+  /**
+   * List all API Sources
+   */
+  async listApiSources() {
+    const response = await this.client.get('/api/api-sources');
+    return response.data;
+  }
+
   /**
    * Create a new API Source
-   * 
-   * @param data Configuration for the new API Source
-   * @returns The created API Source object
    */
   async createApiSource(data: ApiSourceData) {
     const response = await this.client.post('/api/api-sources', data);
     return response.data;
   }
 
+  // ── API Documents (formerly Endpoints) ───────────────────────────────────
+
   /**
-   * Create a new Build (Document)
-   * 
-   * @param data Configuration for the new Build
-   * @returns The created Build object
+   * List all Documents for a specific API Source
    */
-  async createBuild(data: BuildData) {
-    const response = await this.client.post('/api/builds', data);
+  async listApiDocuments(sourceId: number) {
+    const response = await this.client.get(`/api/api-sources/${sourceId}/endpoints`);
     return response.data;
   }
 
   /**
-   * Create a Template for a specific Build
-   * 
-   * @param buildId The ID of the Build to attach the template to
-   * @param data Template content and options
-   * @returns The created Template object
+   * Create a new API Document under an API Source
    */
-  async createTemplate(buildId: number, data: TemplateData) {
-    const response = await this.client.post(`/api/documents/${buildId}/templates`, data);
-    return response.data;
-  }
-
-  /**
-   * Create a new API Endpoint under an API Source
-   * 
-   * @param sourceId The ID of the API Source
-   * @param data Configuration for the new Endpoint
-   * @returns The created API Endpoint object
-   */
-  async createApiEndpoint(sourceId: number, data: ApiEndpointData) {
+  async createApiDocument(sourceId: number, data: ApiDocumentData) {
     const response = await this.client.post(`/api/api-sources/${sourceId}/endpoints`, data);
     return response.data;
   }
 
-  /**
-   * Fetch data for a specific Build (uses the linked ApiEndpoint to fetch from the provider)
-   * 
-   * @param buildId The ID of the Build
-   * @returns The JSON data returned by the API
-   */
-  async fetchBuildData(buildId: number) {
-    const response = await this.client.get(`/api/builds/${buildId}/data`);
-    return response.data;
+  /** @deprecated Use createApiDocument instead */
+  async createApiEndpoint(sourceId: number, data: ApiDocumentData) {
+    return this.createApiDocument(sourceId, data);
   }
 
   /**
-   * Generate a report from a Build
+   * Test a Document's data fetching
    * 
-   * @param buildId The ID of the Build to generate
-   * @param params Dynamic parameters to pass to the report generation
-   * @returns The generated report data (often base64 or a link)
+   * @param sourceId The ID of the API Source
+   * @param documentId The ID of the Document to test
+   * @returns Test result with data and potential missing variables
    */
-  async generate(buildId: number, params: Record<string, any> = {}) {
-    const response = await this.client.post(`/api/builds/${buildId}/generate`, { params });
+  async testApiDocument(sourceId: number, documentId: number): Promise<TestResult> {
+    const response = await this.client.post(`/api/api-sources/${sourceId}/endpoints/${documentId}/test`);
     return response.data;
   }
 
-  /**
-   * Generate a report but override the API fetching process by providing the data directly
-   * 
-   * @param buildId The ID of the Build to generate
-   * @param data The JSON data to use for generation (bypasses the ApiSource fetch)
-   * @param params Dynamic parameters to pass to the report generation
-   * @returns The generated report data
-   */
-  async generateWithData(buildId: number, data: any, params: Record<string, any> = {}) {
-    const response = await this.client.post(`/api/builds/${buildId}/generate`, { 
-      params: { ...params, _override_data: data } 
-    });
-    return response.data;
-  }
+  // ── Templates & Generation ───────────────────────────────────────────────
 
   /**
-   * List all builds available in the account
+   * Generate a report from a Document
    * 
-   * @returns Array of build objects
+   * @param sourceId The ID of the API Source
+   * @param documentId The ID of the Document
+   * @param params Optional parameters
    */
-  async listBuilds() {
-    const response = await this.client.get('/api/builds');
-    return response.data;
-  }
-
-  /**
-   * Get details for a specific build
-   * 
-   * @param buildId The unique identifier of the build
-   * @returns Detailed build object
-   */
-  async getBuild(buildId: number) {
-    const response = await this.client.get(`/api/builds/${buildId}`);
+  async generate(sourceId: number, documentId: number, params: Record<string, any> = {}) {
+    // Note: This endpoint might vary based on your backend implementation for generation
+    const response = await this.client.post(`/api/api-sources/${sourceId}/endpoints/${documentId}/generate`, { params });
     return response.data;
   }
 }

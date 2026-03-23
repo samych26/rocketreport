@@ -1,6 +1,6 @@
 {
   "name": "rocketreport",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "JavaScript SDK for RocketReport API",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -35,8 +35,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.6.0",
-    "rocketreport": "^1.0.0"
+    "axios": "^1.6.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
