@@ -1,5 +1,5 @@
 {
-  "name": "@rocketreport/mcp-server",
+  "name": "rocketreport-mcp-server",
   "version": "1.0.0",
   "description": "Official RocketReport MCP Server. Connect your AI to your data reports.",
   "main": "dist/index.js",

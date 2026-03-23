@@ -18,6 +18,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyEmailSentPage from './pages/VerifyEmailSentPage';
+import McpDocsPage from './pages/McpDocsPage';
 import './App.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
             <Routes>
               <Route path="/" element={<SplashScreen />} />
               <Route path="/welcome" element={<LoadingPage />} />
+              <Route path="/mcp-docs" element={<McpDocsPage />} />
               <Route path="/login" element={<AuthFlipCard initialSide="login" />} />
               <Route path="/register" element={<AuthFlipCard initialSide="register" />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

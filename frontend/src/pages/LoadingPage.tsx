@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
+import WelcomeNavbar from '../components/WelcomeNavbar';
 import backgroundVideo from '../assets/background.mp4';
 import './LoadingPage.css';
 
@@ -30,6 +31,7 @@ const LoadingPage = () => {
 
     return (
         <div className="welcome-page">
+            <WelcomeNavbar />
 
             {/* ── HERO ── */}
             <section className="welcome-hero">
@@ -43,7 +45,7 @@ const LoadingPage = () => {
                     <p className="welcome-hero-subtitle">{t('hero_subtitle')}</p>
                     <div className="welcome-hero-actions">
                         <Link to="/register" className="welcome-btn-primary">{t('get_started')} →</Link>
-                        <Link to="/login" className="welcome-btn-outline">{t('login_submit')} →</Link>
+                        <Link to="/mcp-docs" className="welcome-btn-outline">{t('request_demo')} →</Link>
                     </div>
                 </div>
 

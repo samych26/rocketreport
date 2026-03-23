@@ -63,6 +63,22 @@ const translations = {
         nav_api_sources: 'API Sources',
         nav_build: 'Build',
         nav_generations: 'Générations',
+        nav_mcp: 'AI Server (MCP)',
+        nav_npm: 'Paquet NPM',
+        nav_docs: 'Documentation',
+
+        // MCP Docs Page
+        mcp_title: 'Connectez votre IA à RocketReport',
+        mcp_subtitle: 'Utilisez le Model Context Protocol (MCP) pour permettre à Claude, ChatGPT ou Gemini de générer vos rapports.',
+        mcp_install_title: 'Installation Rapide',
+        mcp_install_step1: '1. Récupérez votre clé API dans les paramètres.',
+        mcp_install_step2: '2. Ajoutez la configuration à votre client IA.',
+        mcp_conf_title: 'Configuration Claude Desktop',
+        mcp_conf_desc: 'Ajoutez ce bloc à votre fichier `claude_desktop_config.json` :',
+        mcp_features_title: 'Ce que l\'IA peut faire',
+        mcp_feat_data: 'Analyser vos sources de données en temps réel.',
+        mcp_feat_build: 'Écrire du code de transformation (JS/Python).',
+        mcp_feat_gen: 'Générer et vous envoyer le PDF final.',
 
         // Common actions
         btn_refresh: 'Rafraîchir',
@@ -333,6 +349,22 @@ const translations = {
         nav_api_sources: 'API Sources',
         nav_build: 'Build',
         nav_generations: 'Generations',
+        nav_mcp: 'AI Server (MCP)',
+        nav_npm: 'NPM Package',
+        nav_docs: 'Documentation',
+
+        // MCP Docs Page
+        mcp_title: 'Connect your AI to RocketReport',
+        mcp_subtitle: 'Use the Model Context Protocol (MCP) to let Claude, ChatGPT or Gemini generate your reports.',
+        mcp_install_title: 'Quick Install',
+        mcp_install_step1: '1. Get your API Key from settings.',
+        mcp_install_step2: '2. Add the configuration to your AI client.',
+        mcp_conf_title: 'Claude Desktop Configuration',
+        mcp_conf_desc: 'Add this block to your `claude_desktop_config.json` file:',
+        mcp_features_title: 'What the AI can do',
+        mcp_feat_data: 'Analyze your data sources in real-time.',
+        mcp_feat_build: 'Write transformation code (JS/Python).',
+        mcp_feat_gen: 'Generate and send you the final PDF.',
 
         // Common actions
         btn_refresh: 'Refresh',

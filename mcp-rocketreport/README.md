@@ -8,7 +8,7 @@ You can run the server directly using `npx`:
 
 ```bash
 export ROCKETREPORT_API_KEY=rr_live_your_key_here
-npx -y @rocketreport/mcp-server
+npx -y rocketreport-mcp-server
 ```
 
 ## Setup for AI Clients
@@ -26,7 +26,7 @@ Add this to your configuration file:
       "command": "npx",
       "args": [
         "-y",
-        "@rocketreport/mcp-server"
+        "rocketreport-mcp-server"
       ],
       "env": {
         "ROCKETREPORT_API_KEY": "your_api_key_here"
@@ -44,7 +44,7 @@ If your editor supports MCP servers via configuration:
 "mcpServers": {
   "rocketreport": {
     "command": "npx",
-    "args": ["-y", "@rocketreport/mcp-server"],
+    "args": ["-y", "rocketreport-mcp-server"],
     "env": {
       "ROCKETREPORT_API_KEY": "your_api_key_here"
     }

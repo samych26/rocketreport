@@ -1,0 +1,136 @@
+.welcome-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 24px 0;
+    transition: all 0.3s ease;
+}
+
+.welcome-navbar.is-scrolled {
+    padding: 12px 0;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.welcome-nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.welcome-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: white;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.welcome-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.welcome-nav-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.welcome-nav-link:hover {
+    color: white;
+}
+
+.welcome-nav-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.welcome-lang-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.welcome-nav-btn-outline {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.welcome-nav-btn-outline:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.welcome-nav-btn-primary {
+    background: #3b82f6;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.welcome-nav-btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.welcome-nav-mobile-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+@media (max-width: 968px) {
+    .welcome-nav-links {
+        display: none;
+    }
+    
+    .welcome-nav-links.is-open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #020617;
+        padding: 40px 20px;
+        gap: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .welcome-nav-mobile-toggle {
+        display: block;
+    }
+    
+    .welcome-nav-divider {
+        display: none;
+    }
+}
