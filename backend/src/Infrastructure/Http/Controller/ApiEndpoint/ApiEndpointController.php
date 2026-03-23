@@ -191,31 +191,44 @@ final class ApiEndpointController extends AbstractController
             $data = json_decode($content, true);
 
             $requestedVariables = $endpoint->getVariables();
-            $filteredData = [];
+            $finalData = [];
             $missingVariables = [];
 
             if (!empty($requestedVariables)) {
-                foreach ($requestedVariables as $var) {
-                    // Logique simple d'extraction (peut être étendue à la notation pointée si besoin)
-                    if (isset($data[$var])) {
-                        $filteredData[$var] = $data[$var];
+                foreach ($requestedVariables as $path) {
+                    // Extraction avec support de la notation pointée (ex: user.name)
+                    $value = $data;
+                    $parts = explode('.', $path);
+                    $found = true;
+                    
+                    foreach ($parts as $part) {
+                        if (is_array($value) && isset($value[$part])) {
+                            $value = $value[$part];
+                        } else {
+                            $found = false;
+                            break;
+                        }
+                    }
+
+                    if ($found) {
+                        $finalData[$path] = $value;
                     } else {
-                        $missingVariables[] = $var;
+                        $missingVariables[] = $path;
                     }
                 }
-                $finalData = $filteredData;
             } else {
                 $finalData = $data;
             }
 
+            $hasMissing = !empty($requestedVariables) && !empty($missingVariables);
+
             return $this->json([
-                'success' => true,
+                'success' => !$hasMissing,
                 'status_code' => $response->getStatusCode(),
                 'data' => $finalData,
                 'missing_variables' => $missingVariables,
-                'message' => empty($missingVariables) 
-                    ? 'Données récupérées avec succès' 
-                    : 'Certaines variables sont manquantes'
+                'error' => $hasMissing ? 'Certaines variables demandées n\'ont pas été trouvées dans la réponse API.' : null,
+                'message' => $hasMissing ? 'Erreur de configuration' : 'Données récupérées avec succès'
             ], Response::HTTP_OK);
 
         } catch (\Exception $e) {
