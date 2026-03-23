@@ -127,7 +127,7 @@ const McpDocsPage = () => {
                             <div className="mcp-step-number">1</div>
                             <div className="mcp-step-content">
                                 <h4>Ouvrir les réglages</h4>
-                                <p>Allez dans <strong>Settings > Features > MCP</strong>.</p>
+                                <p>Allez dans <strong>Settings &gt; Features &gt; MCP</strong>.</p>
                             </div>
                         </div>
                         <div className="mcp-step">
