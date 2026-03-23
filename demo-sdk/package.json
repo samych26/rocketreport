@@ -1,0 +1,12 @@
+{
+  "name": "rocketreport-demo",
+  "version": "1.0.0",
+  "description": "Démonstration complète du SDK RocketReport",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "rocketreport": "file:../sdk/rocketreport-js"
+  }
+}

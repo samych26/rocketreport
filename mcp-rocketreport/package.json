@@ -1,0 +1,36 @@
+{
+  "name": "@rocketreport/mcp-server",
+  "version": "1.0.0",
+  "description": "Official RocketReport MCP Server. Connect your AI to your data reports.",
+  "main": "dist/index.js",
+  "bin": {
+    "rocketreport-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "rocketreport",
+    "ai",
+    "reporting"
+  ],
+  "author": "RocketReport",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.1.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}

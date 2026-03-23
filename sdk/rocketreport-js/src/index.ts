@@ -82,7 +82,6 @@ export class RocketReport {
     this.client = axios.create({
       baseURL: baseUrl.replace(/\/$/, ''),
       headers: {
-        'Authorization': `Bearer ${apiKey}`, // Assuming API Key is used as Bearer or custom header
         'X-API-KEY': apiKey,
         'Content-Type': 'application/json',
       },
@@ -160,15 +159,42 @@ export class RocketReport {
   // ── Templates & Generation ───────────────────────────────────────────────
 
   /**
+   * List all standalone templates
+   */
+  async listTemplates() {
+    const response = await this.client.get('/api/templates');
+    return response.data;
+  }
+
+  /**
+   * Get a specific template by ID
+   */
+  async getTemplate(templateId: number) {
+    const response = await this.client.get(`/api/templates/${templateId}`);
+    return response.data;
+  }
+
+  /**
+   * Create or update a template
+   */
+  async upsertTemplate(data: { name: string; content: string; output_format?: string; description?: string; id?: number }) {
+    if (data.id) {
+      const response = await this.client.patch(`/api/templates/${data.id}`, data);
+      return response.data;
+    } else {
+      const response = await this.client.post('/api/templates', data);
+      return response.data;
+    }
+  }
+
+  /**
    * Generate a report from a Document
    * 
-   * @param sourceId The ID of the API Source
-   * @param documentId The ID of the Document
-   * @param params Optional parameters
+   * @param documentId The ID of the Document (previously Endpoint)
+   * @param params Optional dynamic parameters for the generation
    */
-  async generate(sourceId: number, documentId: number, params: Record<string, any> = {}) {
-    // Note: This endpoint might vary based on your backend implementation for generation
-    const response = await this.client.post(`/api/api-sources/${sourceId}/endpoints/${documentId}/generate`, { params });
+  async generate(documentId: number, params: Record<string, any> = {}) {
+    const response = await this.client.post(`/api/documents/${documentId}/generations/generate`, { params });
     return response.data;
   }
 }

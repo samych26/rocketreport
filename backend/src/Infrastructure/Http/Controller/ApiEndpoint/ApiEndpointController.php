@@ -195,26 +195,42 @@ final class ApiEndpointController extends AbstractController
             $missingVariables = [];
 
             if (!empty($requestedVariables)) {
-                foreach ($requestedVariables as $path) {
-                    // Extraction avec support de la notation pointée (ex: user.name)
-                    $value = $data;
-                    $parts = explode('.', $path);
-                    $found = true;
-                    
-                    foreach ($parts as $part) {
-                        if (is_array($value) && isset($value[$part])) {
-                            $value = $value[$part];
+                // Fonction d'extraction récursive pour un objet donné
+                $extractFromItem = function($item, $requestedPaths) use (&$missingVariables) {
+                    $filteredItem = [];
+                    foreach ($requestedPaths as $path) {
+                        $value = $item;
+                        $parts = explode('.', $path);
+                        $found = true;
+                        
+                        foreach ($parts as $part) {
+                            if (is_array($value) && isset($value[$part])) {
+                                $value = $value[$part];
+                            } else {
+                                $found = false;
+                                break;
+                            }
+                        }
+
+                        if ($found) {
+                            $filteredItem[$path] = $value;
                         } else {
-                            $found = false;
-                            break;
+                            if (!in_array($path, $missingVariables)) {
+                                $missingVariables[] = $path;
+                            }
                         }
                     }
+                    return $filteredItem;
+                };
 
-                    if ($found) {
-                        $finalData[$path] = $value;
-                    } else {
-                        $missingVariables[] = $path;
+                // Si c'est une liste d'objets, on filtre chaque objet
+                if (is_array($data) && isset($data[0]) && is_array($data[0])) {
+                    foreach ($data as $item) {
+                        $finalData[] = $extractFromItem($item, $requestedVariables);
                     }
+                } else {
+                    // Sinon on filtre l'objet unique
+                    $finalData = $extractFromItem($data, $requestedVariables);
                 }
             } else {
                 $finalData = $data;
