@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Zap, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { X, Save, Zap, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { apiSourceService } from '../services/apiSourceService';
 import type { ApiEndpoint, ApiEndpointPayload } from '../services/apiSourceService';
 import './ApiSourceModal.css';
