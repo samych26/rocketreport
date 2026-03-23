@@ -1,19 +1,20 @@
 :root {
-    --mcp-bg: #0f172a;
-    --mcp-sidebar-bg: #020617;
-    --mcp-card-bg: #1e293b;
-    --mcp-accent: #3b82f6;
-    --mcp-text: #f8fafc;
-    --mcp-text-muted: #94a3b8;
-    --mcp-border: rgba(255, 255, 255, 0.1);
-    --mcp-code-bg: #010409;
+    --mcp-bg: #1e1e24;
+    --mcp-sidebar-bg: #16161a;
+    --mcp-card-bg: #2b2b36;
+    --mcp-accent: #e6cba3;
+    --mcp-accent-hover: #f5dfbf;
+    --mcp-text: #f0f0f0;
+    --mcp-text-muted: #a9a9b3;
+    --mcp-border: #3f3f4e;
+    --mcp-code-bg: #121217;
 }
 
 .mcp-docs-page {
     background: var(--mcp-bg);
     color: var(--mcp-text);
     min-height: 100vh;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
 }
 
 /* Layout */
@@ -21,7 +22,7 @@
     display: flex;
     max-width: 1400px;
     margin: 0 auto;
-    padding-top: 80px; /* Offset for navbar */
+    padding-top: 80px;
 }
 
 /* Sidebar Navigation */
@@ -51,7 +52,7 @@
     font-weight: 700;
     text-transform: uppercase;
     color: var(--mcp-text-muted);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     margin-bottom: 12px;
     padding-left: 12px;
 }
@@ -62,17 +63,18 @@
     color: var(--mcp-text-muted);
     text-decoration: none;
     border-radius: 8px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     transition: all 0.2s;
+    font-weight: 500;
 }
 
 .mcp-nav-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--mcp-text);
+    background: rgba(230, 203, 163, 0.05);
+    color: var(--mcp-accent);
 }
 
 .mcp-nav-item.active {
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(230, 203, 163, 0.1);
     color: var(--mcp-accent);
     font-weight: 600;
 }
@@ -90,48 +92,52 @@
 }
 
 .mcp-section h1 {
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 800;
     margin-bottom: 24px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    color: white;
 }
 
 .mcp-section h2 {
-    font-size: 2rem;
+    font-size: 2.2rem;
     font-weight: 700;
-    margin-top: 40px;
-    margin-bottom: 20px;
+    margin-top: 48px;
+    margin-bottom: 24px;
     border-bottom: 1px solid var(--mcp-border);
-    padding-bottom: 12px;
+    padding-bottom: 16px;
+    color: var(--mcp-accent);
 }
 
 .mcp-section h3 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     margin-top: 32px;
     margin-bottom: 16px;
+    color: white;
 }
 
 .mcp-lead {
     font-size: 1.25rem;
     color: var(--mcp-text-muted);
-    line-height: 1.6;
-    margin-bottom: 40px;
+    line-height: 1.7;
+    margin-bottom: 48px;
 }
 
 .mcp-text-block {
     color: var(--mcp-text-muted);
-    line-height: 1.7;
+    line-height: 1.8;
     margin-bottom: 20px;
 }
 
 /* Code Blocks */
 .mcp-code-wrapper {
     position: relative;
-    margin: 24px 0;
+    margin: 28px 0;
     background: var(--mcp-code-bg);
     border-radius: 12px;
     border: 1px solid var(--mcp-border);
     overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 .mcp-code-header {
@@ -139,7 +145,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.02);
     border-bottom: 1px solid var(--mcp-border);
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
@@ -147,26 +153,29 @@
 }
 
 .mcp-copy-btn {
-    background: none;
+    background: transparent;
     border: 1px solid var(--mcp-border);
-    color: var(--mcp-text-muted);
-    padding: 4px 8px;
+    color: var(--mcp-accent);
+    padding: 4px 10px;
     font-size: 0.75rem;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
 }
 
 .mcp-copy-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    background: var(--mcp-accent);
+    color: var(--mcp-bg);
+    border-color: var(--mcp-accent);
 }
 
 .mcp-code-block {
-    padding: 20px;
+    padding: 24px;
     margin: 0;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
-    line-height: 1.5;
+    line-height: 1.6;
     color: #e2e8f0;
     overflow-x: auto;
 }
@@ -177,6 +186,7 @@
     margin: 32px 0;
     border-radius: 12px;
     border: 1px solid var(--mcp-border);
+    background: var(--mcp-card-bg);
 }
 
 .mcp-table {
@@ -188,29 +198,87 @@
 
 .mcp-table th {
     background: rgba(255, 255, 255, 0.03);
-    padding: 16px;
-    font-weight: 600;
-    color: var(--mcp-text);
+    padding: 18px;
+    font-weight: 700;
+    color: white;
     border-bottom: 1px solid var(--mcp-border);
 }
 
 .mcp-table td {
-    padding: 16px;
+    padding: 18px;
     border-bottom: 1px solid var(--mcp-border);
     color: var(--mcp-text-muted);
 }
 
-.mcp-table tr:last-child td {
-    border-bottom: none;
+.mcp-badge-tool {
+    background: rgba(230, 203, 163, 0.1);
+    color: var(--mcp-accent);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    border: 1px solid rgba(230, 203, 163, 0.2);
 }
 
-.mcp-badge-tool {
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--mcp-accent);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-weight: 600;
+/* Steps */
+.mcp-step {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.mcp-step-number {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: var(--mcp-accent);
+    color: var(--mcp-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.mcp-step-content h4 {
+    margin-top: 6px;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: white;
+}
+
+/* Cards */
+.mcp-card {
+    background: var(--mcp-card-bg);
+    border: 1px solid var(--mcp-border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    transition: border-color 0.2s;
+}
+
+.mcp-card:hover {
+    border-color: var(--mcp-accent);
+}
+
+.mcp-btn-primary {
+    display: inline-block;
+    background: var(--mcp-accent);
+    color: var(--mcp-bg);
+    text-decoration: none;
+    padding: 14px 28px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 700;
+    margin-top: 24px;
+    transition: all 0.2s;
+}
+
+.mcp-btn-primary:hover {
+    background: var(--mcp-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(230, 203, 163, 0.2);
 }
 
 /* Steps */
