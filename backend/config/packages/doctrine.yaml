@@ -1,26 +1,8 @@
-parameters:
-    # Valeurs par défaut pour le build et si les variables sont absentes
-    env(DATABASE_DRIVER): 'pdo_mysql'
-    env(DATABASE_HOST): 'localhost'
-    env(DATABASE_PORT): '3306'
-    env(DATABASE_USER): 'db_user'
-    env(DATABASE_PASSWORD): 'db_password'
-    env(DATABASE_NAME): 'db_name'
-
 doctrine:
     dbal:
-        driver: '%env(DATABASE_DRIVER)%'
-        host: '%env(DATABASE_HOST)%'
-        port: '%env(DATABASE_PORT)%'
-        user: '%env(DATABASE_USER)%'
-        password: '%env(DATABASE_PASSWORD)%'
-        dbname: '%env(DATABASE_NAME)%'
-        server_version: '8.0'
-        charset: utf8mb4
+        url: '%env(resolve:DATABASE_URL)%'
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
-        options:
-            1014: false # PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true
