@@ -31,7 +31,7 @@ fi
 chown -R www-data:www-data /var/www/html/var
 
 echo "[entrypoint] Running database migrations..."
-php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || echo "[entrypoint] WARNING: Migrations failed, but continuing..."
 
 echo "[entrypoint] Warming up cache..."
 php bin/console cache:warmup
