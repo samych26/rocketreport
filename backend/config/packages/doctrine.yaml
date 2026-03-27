@@ -1,11 +1,20 @@
+parameters:
+    # Valeurs par défaut pour le build et si les variables sont absentes
+    env(DATABASE_DRIVER): 'pdo_mysql'
+    env(DATABASE_HOST): 'localhost'
+    env(DATABASE_PORT): '3306'
+    env(DATABASE_USER): 'db_user'
+    env(DATABASE_PASSWORD): 'db_password'
+    env(DATABASE_NAME): 'db_name'
+
 doctrine:
     dbal:
-        driver: '%env(default:pdo_mysql:DATABASE_DRIVER)%'
-        host: '%env(default:localhost:DATABASE_HOST)%'
-        port: '%env(default:3306:DATABASE_PORT)%'
-        user: '%env(default:db_user:DATABASE_USER)%'
-        password: '%env(default:db_password:DATABASE_PASSWORD)%'
-        dbname: '%env(default:db_name:DATABASE_NAME)%'
+        driver: '%env(DATABASE_DRIVER)%'
+        host: '%env(DATABASE_HOST)%'
+        port: '%env(DATABASE_PORT)%'
+        user: '%env(DATABASE_USER)%'
+        password: '%env(DATABASE_PASSWORD)%'
+        dbname: '%env(DATABASE_NAME)%'
         server_version: '8.0'
         charset: utf8mb4
         profiling_collect_backtrace: '%kernel.debug%'
