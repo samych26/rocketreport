@@ -224,7 +224,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
   
   // 1. Try to get API key from session (SSE)
-  const sessionId = (extra?.transport as any)?.sessionId;
+  const sessionId = (extra as any)?.transport?.sessionId;
   const sessionApiKey = sessionId ? sessionApiKeys.get(sessionId) : null;
   
   // 2. Try to get from request headers (some clients might send them)
