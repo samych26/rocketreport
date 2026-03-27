@@ -75,6 +75,22 @@ services:
     networks:
       - rocketreport-network
 
+  # 🤖 MCP Server (Model Context Protocol)
+  mcp-server:
+    container_name: rocketreport-mcp
+    build:
+      context: ./mcp-rocketreport
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - ROCKETREPORT_BASE_URL=http://backend
+      - PORT=3000
+    networks:
+      - rocketreport-network
+
 volumes:
   db_data:
   redis_data:

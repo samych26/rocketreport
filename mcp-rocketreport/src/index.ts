@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -9,20 +10,15 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import axios, { AxiosInstance } from "axios";
 import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
 
 dotenv.config();
 
-// Default to public API if not set, otherwise allow local override
 const DEFAULT_API_URL = "https://api.rocketreport.io"; 
 const API_KEY = process.env.ROCKETREPORT_API_KEY;
 const BASE_URL = process.env.ROCKETREPORT_BASE_URL || DEFAULT_API_URL;
-
-if (!API_KEY) {
-  console.error("Error: ROCKETREPORT_API_KEY environment variable is required");
-  console.error("Please restart with your API Key set. Example:");
-  console.error("  ROCKETREPORT_API_KEY=rr_live_xxx npx @rocketreport/mcp-server");
-  process.exit(1);
-}
+const PORT = process.env.PORT || 3000;
 
 /**
  * RocketReport Client logic
@@ -75,14 +71,12 @@ class RocketReportClient {
     }
   }
 
-  // ── Builds & Data Formatting ─────────────────────────────────────────────
-
   async listBuilds() {
     const response = await this.axiosInstance.get("/api/builds");
     return response.data;
   }
 
-  async upsertBuild(data: { id?: number; name: string; api_endpoint_id: number; code: string; description?: string; template_id?: number }) {
+  async upsertBuild(data: any) {
     if (data.id) {
       const response = await this.axiosInstance.patch(`/api/builds/${data.id}`, data);
       return response.data;
@@ -102,15 +96,11 @@ class RocketReportClient {
     return response.data;
   }
 
-  // ── Generation ───────────────────────────────────────────────────────────
-
   async generateReport(documentId: number, params: Record<string, any> = {}) {
     const response = await this.axiosInstance.post(`/api/documents/${documentId}/generations/generate`, { params });
     return response.data;
   }
 }
-
-const client = new RocketReportClient(API_KEY, BASE_URL);
 
 /**
  * MCP Server Implementation
@@ -127,17 +117,29 @@ const server = new Server(
   }
 );
 
-/**
- * List available tools
- */
+const sessionApiKeys = new Map<string, string>();
+
+// Register Tool Handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
+      {
+        name: "set_api_key",
+        description: "Set the RocketReport API key for the current session if not provided via environment or headers.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            apiKey: { type: "string", description: "Your RocketReport API key" },
+          },
+          required: ["apiKey"],
+        },
+      },
       {
         name: "list_api_sources",
         description: "List all configured API data sources (Stripe, Shopify, etc.)",
         inputSchema: { type: "object", properties: {} },
       },
+      // ... (rest of tools)
       {
         name: "list_api_documents",
         description: "List all data documents (endpoints) for a specific API source",
@@ -168,47 +170,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "list_builds",
-        description: "List all builds (document configurations with data processing code)",
+        description: "List all builds (configurations with data processing code)",
         inputSchema: { type: "object", properties: {} },
       },
       {
         name: "upsert_build",
-        description: "Create or update a build. A build connects an API endpoint to a document and includes JS/Python code to format the data.",
+        description: "Create or update a build. Links an API endpoint to formatting logic.",
         inputSchema: {
           type: "object",
           properties: {
-            id: { type: "number", description: "Build ID (for update)" },
-            name: { type: "string", description: "Build name" },
-            api_endpoint_id: { type: "number", description: "ID of the raw API endpoint" },
-            code: { type: "string", description: "JavaScript or Python code to format the data. Use 'return data' to transform raw input." },
-            description: { type: "string", description: "Short description" },
-            template_id: { type: "number", description: "Link a report template to this build" },
+            id: { type: "number" },
+            name: { type: "string" },
+            api_endpoint_id: { type: "number" },
+            code: { type: "string" },
+            description: { type: "string" },
+            template_id: { type: "number" },
           },
           required: ["name", "api_endpoint_id", "code"],
-        },
-      },
-      {
-        name: "run_formatting_code",
-        description: "Test your JavaScript/Python formatting code against sample data before saving the build.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            code: { type: "string", description: "The formatting script" },
-            data: { type: "object", description: "The raw data to process" },
-            language: { type: "string", enum: ["javascript", "python"], default: "javascript" },
-          },
-          required: ["code", "data"],
-        },
-      },
-      {
-        name: "get_build_processed_data",
-        description: "Fetch the final, processed data for a build (after the JS/Python code has run).",
-        inputSchema: {
-          type: "object",
-          properties: {
-            buildId: { type: "number", description: "The ID of the build" },
-          },
-          required: ["buildId"],
         },
       },
       {
@@ -217,10 +195,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            id: { type: "number", description: "Template ID (optional, for update)" },
-            name: { type: "string", description: "Template name" },
-            content: { type: "string", description: "HTML/Handlebars content" },
-            description: { type: "string", description: "Template description" },
+            id: { type: "number" },
+            name: { type: "string" },
+            content: { type: "string" },
+            description: { type: "string" },
             output_format: { type: "string", enum: ["pdf", "html", "xlsx"], default: "pdf" },
           },
           required: ["name", "content"],
@@ -228,12 +206,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "generate_report",
-        description: "Generate a report file from a document and optional parameters",
+        description: "Generate a report file from a document",
         inputSchema: {
           type: "object",
           properties: {
-            documentId: { type: "number", description: "ID of the document to use for data" },
-            params: { type: "object", description: "Dynamic parameters for filtering data" },
+            documentId: { type: "number" },
+            params: { type: "object" },
           },
           required: ["documentId"],
         },
@@ -242,44 +220,54 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
-/**
- * Handle tool calls
- */
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
+  
+  // 1. Try to get API key from session (SSE)
+  const sessionId = (extra?.transport as any)?.sessionId;
+  const sessionApiKey = sessionId ? sessionApiKeys.get(sessionId) : null;
+  
+  // 2. Try to get from request headers (some clients might send them)
+  const meta = request.params._meta as any;
+  const headerApiKey = meta?.headers?.["authorization"]?.replace("Bearer ", "");
+  
+  // 3. Fallback to environment variable
+  const effectiveApiKey = sessionApiKey || headerApiKey || API_KEY;
+  
+  // Tool: set_api_key (special case as it doesn't require a pre-existing key)
+  if (name === "set_api_key") {
+    if (sessionId) {
+      sessionApiKeys.set(sessionId, (args?.apiKey as string).trim());
+      return { content: [{ type: "text", text: "API key has been set for this session." }] };
+    } else {
+      return { content: [{ type: "text", text: "API key cannot be set for a stdio session. Use the ROCKETREPORT_API_KEY environment variable instead." }] };
+    }
+  }
+
+  if (!effectiveApiKey) {
+    throw new McpError(ErrorCode.InvalidRequest, "API Key is required. Please use the 'set_api_key' tool to provide your RocketReport API key, or ensure it's provided via the ROCKETREPORT_API_KEY environment variable or headers.");
+  }
+
+  const client = new RocketReportClient(effectiveApiKey, BASE_URL);
 
   try {
     switch (name) {
       case "list_api_sources":
         return { content: [{ type: "text", text: JSON.stringify(await client.listApiSources(), null, 2) }] };
-
       case "list_api_documents":
         return { content: [{ type: "text", text: JSON.stringify(await client.listApiDocuments(Number(args?.sourceId)), null, 2) }] };
-
       case "test_api_document":
         return { content: [{ type: "text", text: JSON.stringify(await client.testApiDocument(Number(args?.sourceId), Number(args?.documentId)), null, 2) }] };
-
       case "list_templates":
         return { content: [{ type: "text", text: JSON.stringify(await client.listTemplates(), null, 2) }] };
-
       case "list_builds":
         return { content: [{ type: "text", text: JSON.stringify(await client.listBuilds(), null, 2) }] };
-
       case "upsert_build":
-        return { content: [{ type: "text", text: JSON.stringify(await client.upsertBuild(args as any), null, 2) }] };
-
-      case "run_formatting_code":
-        return { content: [{ type: "text", text: JSON.stringify(await client.runFormattingCode(String(args?.code), args?.data, String(args?.language || "javascript")), null, 2) }] };
-
-      case "get_build_processed_data":
-        return { content: [{ type: "text", text: JSON.stringify(await client.getBuildProcessedData(Number(args?.buildId)), null, 2) }] };
-
+        return { content: [{ type: "text", text: JSON.stringify(await client.upsertBuild(args), null, 2) }] };
       case "upsert_template":
         return { content: [{ type: "text", text: JSON.stringify(await client.upsertTemplate(args), null, 2) }] };
-
       case "generate_report":
         return { content: [{ type: "text", text: JSON.stringify(await client.generateReport(Number(args?.documentId), (args?.params as any) || {}), null, 2) }] };
-
       default:
         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
     }
@@ -292,15 +280,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 /**
- * Start the server
+ * Execution Mode Selector
  */
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("RocketReport MCP Server running on stdio");
-}
+const mode = process.argv.includes("--sse") ? "sse" : "stdio";
 
-main().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});
+if (mode === "sse") {
+  const app = express();
+  app.use(cors());
+  app.use(express.json());
+
+  const transports = new Map<string, SSEServerTransport>();
+
+  app.get("/mcp", async (req, res) => {
+    console.error("New SSE connection attempt");
+    const transport = new SSEServerTransport("/messages", res);
+    const sessionId = transport.sessionId;
+    transports.set(sessionId, transport);
+    
+    // Store API key from query param if provided
+    const apiKey = req.query.apiKey as string;
+    if (apiKey) {
+      sessionApiKeys.set(sessionId, apiKey);
+      console.error(`Session ${sessionId} authenticated via URL param`);
+    }
+    
+    await server.connect(transport);
+    
+    // Clean up when connection closes
+    res.on("close", () => {
+      transports.delete(sessionId);
+      sessionApiKeys.delete(sessionId);
+      console.error(`Session ${sessionId} closed`);
+    });
+  });
+
+  app.post("/messages", async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    const transport = transports.get(sessionId);
+
+    if (transport) {
+      await transport.handlePostMessage(req, res);
+    } else {
+      res.status(400).send("Session not found");
+    }
+  });
+
+  app.listen(PORT, () => {
+    console.error(`RocketReport MCP Server (SSE) running on port ${PORT}`);
+    console.error(`URL: http://localhost:${PORT}/mcp`);
+  });
+} else {
+  // Mode Stdio (local npx)
+  const transport = new StdioServerTransport();
+  server.connect(transport).then(() => {
+    console.error("RocketReport MCP Server (Stdio) running");
+  });
+}

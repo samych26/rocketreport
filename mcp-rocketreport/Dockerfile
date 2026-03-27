@@ -1,22 +1,40 @@
-# Use Node.js as the base image
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy configuration files
+COPY package*.json tsconfig.json ./
+
+# Install all dependencies (including devDependencies for tsc)
+RUN npm install
+
+# Copy source code
+COPY src/ ./src/
+
+# Compile TypeScript
+RUN npm run build
+
+# Stage 2: Production runtime
 FROM node:20-alpine
 
-# Set the working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (production only)
+# Install only production dependencies
 RUN npm install --omit=dev
 
-# Copy built files
-COPY dist ./dist
+# Copy compiled files from builder stage
+COPY --from=builder /app/dist ./dist
 
-# Define environment variable (should be overridden at runtime)
-ENV ROCKETREPORT_API_KEY=""
+# Default environment variables
+ENV PORT=3000
+ENV ROCKETREPORT_BASE_URL="https://api.rocketreport.io"
 
-# Expose no ports (MCP uses stdio)
+# Expose the port for SSE mode
+EXPOSE 3000
 
-# Entrypoint
-ENTRYPOINT ["node", "dist/index.js"]
+# Entrypoint - By default starts in SSE mode for cloud deployment
+ENTRYPOINT ["node", "dist/index.js", "--sse"]

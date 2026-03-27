@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError, } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
 dotenv.config();
-// Default to public API if not set, otherwise allow local override
 const DEFAULT_API_URL = "https://api.rocketreport.io";
 const API_KEY = process.env.ROCKETREPORT_API_KEY;
 const BASE_URL = process.env.ROCKETREPORT_BASE_URL || DEFAULT_API_URL;
-if (!API_KEY) {
-    console.error("Error: ROCKETREPORT_API_KEY environment variable is required");
-    console.error("Please restart with your API Key set. Example:");
-    console.error("  ROCKETREPORT_API_KEY=rr_live_xxx npx @rocketreport/mcp-server");
-    process.exit(1);
-}
+const PORT = process.env.PORT || 3000;
 /**
  * RocketReport Client logic
  */
@@ -59,7 +56,6 @@ class RocketReportClient {
             return response.data;
         }
     }
-    // ── Builds & Data Formatting ─────────────────────────────────────────────
     async listBuilds() {
         const response = await this.axiosInstance.get("/api/builds");
         return response.data;
@@ -82,13 +78,11 @@ class RocketReportClient {
         const response = await this.axiosInstance.get(`/api/builds/${buildId}/data`);
         return response.data;
     }
-    // ── Generation ───────────────────────────────────────────────────────────
     async generateReport(documentId, params = {}) {
         const response = await this.axiosInstance.post(`/api/documents/${documentId}/generations/generate`, { params });
         return response.data;
     }
 }
-const client = new RocketReportClient(API_KEY, BASE_URL);
 /**
  * MCP Server Implementation
  */
@@ -100,9 +94,7 @@ const server = new Server({
         tools: {},
     },
 });
-/**
- * List available tools
- */
+// Register Tool Handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: [
@@ -141,47 +133,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "list_builds",
-                description: "List all builds (document configurations with data processing code)",
+                description: "List all builds (configurations with data processing code)",
                 inputSchema: { type: "object", properties: {} },
             },
             {
                 name: "upsert_build",
-                description: "Create or update a build. A build connects an API endpoint to a document and includes JS/Python code to format the data.",
+                description: "Create or update a build. Links an API endpoint to formatting logic.",
                 inputSchema: {
                     type: "object",
                     properties: {
-                        id: { type: "number", description: "Build ID (for update)" },
-                        name: { type: "string", description: "Build name" },
-                        api_endpoint_id: { type: "number", description: "ID of the raw API endpoint" },
-                        code: { type: "string", description: "JavaScript or Python code to format the data. Use 'return data' to transform raw input." },
-                        description: { type: "string", description: "Short description" },
-                        template_id: { type: "number", description: "Link a report template to this build" },
+                        id: { type: "number" },
+                        name: { type: "string" },
+                        api_endpoint_id: { type: "number" },
+                        code: { type: "string" },
+                        description: { type: "string" },
+                        template_id: { type: "number" },
                     },
                     required: ["name", "api_endpoint_id", "code"],
-                },
-            },
-            {
-                name: "run_formatting_code",
-                description: "Test your JavaScript/Python formatting code against sample data before saving the build.",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        code: { type: "string", description: "The formatting script" },
-                        data: { type: "object", description: "The raw data to process" },
-                        language: { type: "string", enum: ["javascript", "python"], default: "javascript" },
-                    },
-                    required: ["code", "data"],
-                },
-            },
-            {
-                name: "get_build_processed_data",
-                description: "Fetch the final, processed data for a build (after the JS/Python code has run).",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        buildId: { type: "number", description: "The ID of the build" },
-                    },
-                    required: ["buildId"],
                 },
             },
             {
@@ -190,10 +158,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 inputSchema: {
                     type: "object",
                     properties: {
-                        id: { type: "number", description: "Template ID (optional, for update)" },
-                        name: { type: "string", description: "Template name" },
-                        content: { type: "string", description: "HTML/Handlebars content" },
-                        description: { type: "string", description: "Template description" },
+                        id: { type: "number" },
+                        name: { type: "string" },
+                        content: { type: "string" },
+                        description: { type: "string" },
                         output_format: { type: "string", enum: ["pdf", "html", "xlsx"], default: "pdf" },
                     },
                     required: ["name", "content"],
@@ -201,12 +169,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "generate_report",
-                description: "Generate a report file from a document and optional parameters",
+                description: "Generate a report file from a document",
                 inputSchema: {
                     type: "object",
                     properties: {
-                        documentId: { type: "number", description: "ID of the document to use for data" },
-                        params: { type: "object", description: "Dynamic parameters for filtering data" },
+                        documentId: { type: "number" },
+                        params: { type: "object" },
                     },
                     required: ["documentId"],
                 },
@@ -214,11 +182,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         ],
     };
 });
-/**
- * Handle tool calls
- */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    // Create client with API key from request headers (for HTTP) or env (for stdio)
+    const meta = request.params._meta;
+    const effectiveApiKey = meta?.headers?.["authorization"]?.replace("Bearer ", "") || API_KEY;
+    if (!effectiveApiKey) {
+        throw new McpError(ErrorCode.InvalidRequest, "API Key is required via ROCKETREPORT_API_KEY env or Authorization header");
+    }
+    const client = new RocketReportClient(effectiveApiKey, BASE_URL);
     try {
         switch (name) {
             case "list_api_sources":
@@ -233,10 +205,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 return { content: [{ type: "text", text: JSON.stringify(await client.listBuilds(), null, 2) }] };
             case "upsert_build":
                 return { content: [{ type: "text", text: JSON.stringify(await client.upsertBuild(args), null, 2) }] };
-            case "run_formatting_code":
-                return { content: [{ type: "text", text: JSON.stringify(await client.runFormattingCode(String(args?.code), args?.data, String(args?.language || "javascript")), null, 2) }] };
-            case "get_build_processed_data":
-                return { content: [{ type: "text", text: JSON.stringify(await client.getBuildProcessedData(Number(args?.buildId)), null, 2) }] };
             case "upsert_template":
                 return { content: [{ type: "text", text: JSON.stringify(await client.upsertTemplate(args), null, 2) }] };
             case "generate_report":
@@ -253,14 +221,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 });
 /**
- * Start the server
+ * Execution Mode Selector
  */
-async function main() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error("RocketReport MCP Server running on stdio");
+const mode = process.argv.includes("--sse") ? "sse" : "stdio";
+if (mode === "sse") {
+    const app = express();
+    app.use(cors());
+    let transport;
+    app.get("/mcp", async (req, res) => {
+        transport = new SSEServerTransport("/messages", res);
+        await server.connect(transport);
+    });
+    app.post("/messages", async (req, res) => {
+        if (transport) {
+            await transport.handlePostMessage(req, res);
+        }
+        else {
+            res.status(400).send("No active SSE connection");
+        }
+    });
+    app.listen(PORT, () => {
+        console.error(`RocketReport MCP Server (SSE) running on port ${PORT}`);
+        console.error(`URL: http://localhost:${PORT}/mcp`);
+    });
 }
-main().catch((error) => {
-    console.error("Server error:", error);
-    process.exit(1);
-});
+else {
+    // Mode Stdio (local npx)
+    const transport = new StdioServerTransport();
+    server.connect(transport).then(() => {
+        console.error("RocketReport MCP Server (Stdio) running");
+    });
+}

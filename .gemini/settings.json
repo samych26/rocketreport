@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "rocketreport": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "rocketreport-mcp-server",
+        "--global"
+      ],
+      "env": {
+        "ROCKETREPORT_API_KEY": "51537d939428444b2686dc601f5e919b37c47a5169bc07771d6e37b27592cdf2"
+      }
+    }
+  }
+}
