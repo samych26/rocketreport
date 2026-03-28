@@ -255,7 +255,7 @@ const mode = process.argv.includes("--sse") ? "sse" : "stdio";
 if (mode === "sse") {
     const app = express();
     app.use(cors());
-    app.use(express.json());
+    // Removed app.use(express.json()) to prevent body stream consumption before MCP SDK reads it
     const transports = new Map();
     app.get("/mcp", async (req, res) => {
         console.error("New SSE connection attempt");
