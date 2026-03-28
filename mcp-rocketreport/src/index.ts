@@ -9,15 +9,30 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import axios, { AxiosInstance } from "axios";
+
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
-const DEFAULT_API_URL = "https://api.rocketreport.io"; 
-const API_KEY = process.env.ROCKETREPORT_API_KEY;
-const BASE_URL = process.env.ROCKETREPORT_BASE_URL || DEFAULT_API_URL;
+// Lecture de la config mcp.json si présente
+let mcpConfig: { apiKey?: string; baseUrl?: string } = {};
+try {
+  const mcpPath = path.resolve(__dirname, "../mcp.json");
+  if (fs.existsSync(mcpPath)) {
+    mcpConfig = JSON.parse(fs.readFileSync(mcpPath, "utf-8"));
+  }
+} catch (e) {
+  console.error("Erreur de lecture de mcp.json:", e);
+}
+
+
+const DEFAULT_API_URL = "https://api.rocketreport.io";
+const API_KEY = process.env.ROCKETREPORT_API_KEY || mcpConfig.apiKey;
+const BASE_URL = process.env.ROCKETREPORT_BASE_URL || mcpConfig.baseUrl || DEFAULT_API_URL;
 const PORT = process.env.PORT || 3000;
 
 /**
