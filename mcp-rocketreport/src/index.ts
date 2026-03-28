@@ -238,17 +238,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
   
+
   // 1. Try to get API key from session (SSE)
   const sessionId = (extra as any)?.transport?.sessionId;
   const sessionApiKey = sessionId ? sessionApiKeys.get(sessionId) : null;
-  
+
   // 2. Try to get from request headers (some clients might send them)
   const meta = request.params._meta as any;
   const headerApiKey = meta?.headers?.["authorization"]?.replace("Bearer ", "");
-  
+
   // 3. Fallback to environment variable
-  const effectiveApiKey = sessionApiKey || headerApiKey || API_KEY;
-  
+  let effectiveApiKey = sessionApiKey || headerApiKey || process.env.ROCKETREPORT_API_KEY;
+
+  // 4. Fallback to mcp.json (lecture dynamique)
+  if (!effectiveApiKey) {
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const mcpPath = path.resolve(__dirname, "../mcp.json");
+      if (fs.existsSync(mcpPath)) {
+        const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, "utf-8"));
+        if (mcpConfig.apiKey) {
+          effectiveApiKey = mcpConfig.apiKey;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   // Tool: set_api_key (special case as it doesn't require a pre-existing key)
   if (name === "set_api_key") {
     if (sessionId) {
@@ -260,7 +278,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   }
 
   if (!effectiveApiKey) {
-    throw new McpError(ErrorCode.InvalidRequest, "API Key is required. Please use the 'set_api_key' tool to provide your RocketReport API key, or ensure it's provided via the ROCKETREPORT_API_KEY environment variable or headers.");
+    throw new McpError(ErrorCode.InvalidRequest, "API Key is required. Veuillez renseigner la clé dans la variable d'environnement, les headers, la session, ou dans mcp.json.");
   }
 
   const client = new RocketReportClient(effectiveApiKey, BASE_URL);
