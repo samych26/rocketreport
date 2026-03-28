@@ -8,7 +8,8 @@
         "--global"
       ],
       "env": {
-        "ROCKETREPORT_API_KEY": "51537d939428444b2686dc601f5e919b37c47a5169bc07771d6e37b27592cdf2"
+        "ROCKETREPORT_API_KEY": "31122c068b3a98bddce1c37c1088c08282225fd951da7c727516975f69f80662",
+        "ROCKETREPORT_BASE_URL": "https://rocketreport-mcp.onrender.com"
       }
     }
   }

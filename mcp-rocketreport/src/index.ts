@@ -297,11 +297,23 @@ if (mode === "sse") {
     const sessionId = transport.sessionId;
     transports.set(sessionId, transport);
     
-    // Store API key from query param if provided
-    const apiKey = req.query.apiKey as string;
+    // Store API key from query param or Authorization header
+    let apiKey = req.query.apiKey as string;
+    
+    if (!apiKey && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        apiKey = authHeader.replace("Bearer ", "").trim();
+      } else {
+        apiKey = authHeader.trim();
+      }
+    }
+
     if (apiKey) {
       sessionApiKeys.set(sessionId, apiKey);
-      console.error(`Session ${sessionId} authenticated via URL param`);
+      console.error(`Session ${sessionId} authenticated via credentials`);
+    } else {
+      console.error(`Session ${sessionId} connected without an API key`);
     }
     
     await server.connect(transport);

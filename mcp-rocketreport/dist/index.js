@@ -94,15 +94,28 @@ const server = new Server({
         tools: {},
     },
 });
+const sessionApiKeys = new Map();
 // Register Tool Handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: [
             {
+                name: "set_api_key",
+                description: "Set the RocketReport API key for the current session if not provided via environment or headers.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        apiKey: { type: "string", description: "Your RocketReport API key" },
+                    },
+                    required: ["apiKey"],
+                },
+            },
+            {
                 name: "list_api_sources",
                 description: "List all configured API data sources (Stripe, Shopify, etc.)",
                 inputSchema: { type: "object", properties: {} },
             },
+            // ... (rest of tools)
             {
                 name: "list_api_documents",
                 description: "List all data documents (endpoints) for a specific API source",
@@ -182,13 +195,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         ],
     };
 });
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
-    // Create client with API key from request headers (for HTTP) or env (for stdio)
+    // 1. Try to get API key from session (SSE)
+    const sessionId = extra?.transport?.sessionId;
+    const sessionApiKey = sessionId ? sessionApiKeys.get(sessionId) : null;
+    // 2. Try to get from request headers (some clients might send them)
     const meta = request.params._meta;
-    const effectiveApiKey = meta?.headers?.["authorization"]?.replace("Bearer ", "") || API_KEY;
+    const headerApiKey = meta?.headers?.["authorization"]?.replace("Bearer ", "");
+    // 3. Fallback to environment variable
+    const effectiveApiKey = sessionApiKey || headerApiKey || API_KEY;
+    // Tool: set_api_key (special case as it doesn't require a pre-existing key)
+    if (name === "set_api_key") {
+        if (sessionId) {
+            sessionApiKeys.set(sessionId, (args?.apiKey).trim());
+            return { content: [{ type: "text", text: "API key has been set for this session." }] };
+        }
+        else {
+            return { content: [{ type: "text", text: "API key cannot be set for a stdio session. Use the ROCKETREPORT_API_KEY environment variable instead." }] };
+        }
+    }
     if (!effectiveApiKey) {
-        throw new McpError(ErrorCode.InvalidRequest, "API Key is required via ROCKETREPORT_API_KEY env or Authorization header");
+        throw new McpError(ErrorCode.InvalidRequest, "API Key is required. Please use the 'set_api_key' tool to provide your RocketReport API key, or ensure it's provided via the ROCKETREPORT_API_KEY environment variable or headers.");
     }
     const client = new RocketReportClient(effectiveApiKey, BASE_URL);
     try {
@@ -227,17 +255,47 @@ const mode = process.argv.includes("--sse") ? "sse" : "stdio";
 if (mode === "sse") {
     const app = express();
     app.use(cors());
-    let transport;
+    app.use(express.json());
+    const transports = new Map();
     app.get("/mcp", async (req, res) => {
-        transport = new SSEServerTransport("/messages", res);
+        console.error("New SSE connection attempt");
+        const transport = new SSEServerTransport("/messages", res);
+        const sessionId = transport.sessionId;
+        transports.set(sessionId, transport);
+        // Store API key from query param or Authorization header
+        let apiKey = req.query.apiKey;
+        if (!apiKey && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith("Bearer ")) {
+                apiKey = authHeader.replace("Bearer ", "").trim();
+            }
+            else {
+                apiKey = authHeader.trim();
+            }
+        }
+        if (apiKey) {
+            sessionApiKeys.set(sessionId, apiKey);
+            console.error(`Session ${sessionId} authenticated via credentials`);
+        }
+        else {
+            console.error(`Session ${sessionId} connected without an API key`);
+        }
         await server.connect(transport);
+        // Clean up when connection closes
+        res.on("close", () => {
+            transports.delete(sessionId);
+            sessionApiKeys.delete(sessionId);
+            console.error(`Session ${sessionId} closed`);
+        });
     });
     app.post("/messages", async (req, res) => {
+        const sessionId = req.query.sessionId;
+        const transport = transports.get(sessionId);
         if (transport) {
             await transport.handlePostMessage(req, res);
         }
         else {
-            res.status(400).send("No active SSE connection");
+            res.status(400).send("Session not found");
         }
     });
     app.listen(PORT, () => {
