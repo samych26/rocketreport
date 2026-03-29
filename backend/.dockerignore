@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+vendor/
+node_modules/
+var/cache/*
+var/log/*
+.git/
+.gitignore
+Dockerfile
+docker-compose.yml
