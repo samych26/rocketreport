@@ -1,0 +1,21 @@
+{
+  "name": "test-mcp-sse",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "test-sse": "tsx client-test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "@types/node": "^25.5.0",
+    "@types/node-fetch": "^2.6.13",
+    "axios": "^1.14.0",
+    "node-fetch": "^3.3.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
