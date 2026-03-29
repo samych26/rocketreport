@@ -10,34 +10,30 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Stockage des sessions
 const sessions = new Map<string, { server: McpServer; transport: SSEServerTransport }>();
 
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', sessions: sessions.size });
 });
 
-/**
- * Endpoint SSE
- */
 app.get('/mcp/sse', mcpAuthMiddleware, async (req, res) => {
     const mcpReq = req as McpRequest;
     
-    // Désactiver le cache pour Render
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
 
-    // On utilise un ID de session simple (le début du token + un random) pour débugger facilement
-    const sessionId = `session-${mcpReq.apiToken?.substring(0, 8)}-${Math.random().toString(36).substring(7)}`;
+    const sessionId = Math.random().toString(36).substring(7);
     
     const apiClient = createApiClient(mcpReq.apiToken!);
     const server = createServerInstance(mcpReq.user!.id, mcpReq.user!.email);
     registerTools(server, apiClient);
 
-    // On utilise un chemin RELATIF pour éviter les problèmes de host/protocol sur Render
-    const transport = new SSEServerTransport(`/mcp/messages?sessionId=${sessionId}`, res);
+    // On utilise un chemin RELATIF simple pour le transport
+    const transportEndpoint = `/mcp/messages?sessionId=${sessionId}`;
+    console.log(`[SSE] Tentative de création du transport avec endpoint: ${transportEndpoint}`);
+    const transport = new SSEServerTransport(transportEndpoint, res);
 
     await server.connect(transport);
     sessions.set(sessionId, { server, transport });
@@ -46,25 +42,21 @@ app.get('/mcp/sse', mcpAuthMiddleware, async (req, res) => {
 
     res.on('close', () => {
         console.log(`⚠️ [SSE] Connexion fermée par le client pour ${sessionId}`);
-        // On ne supprime PAS la session immédiatement pour laisser le temps au POST d'arriver
         setTimeout(() => {
             if (sessions.has(sessionId)) {
                 console.log(`🗑️ [Cleanup] Suppression session ${sessionId}`);
                 server.close();
                 sessions.delete(sessionId);
             }
-        }, 30000); // 30 secondes de grâce
+        }, 30000);
     });
 });
 
-/**
- * Endpoint Messages
- */
 app.post('/mcp/messages', async (req, res) => {
     const sessionId = req.query.sessionId as string;
     const session = sessions.get(sessionId);
 
-    console.log(`📩 [POST] Message reçu pour session : ${sessionId}`);
+    console.log(`📩 [POST] Message reçu pour session (requête) : ${sessionId}`);
 
     if (!session) {
         const activeSessions = Array.from(sessions.keys()).join(', ');
