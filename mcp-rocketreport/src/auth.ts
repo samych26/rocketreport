@@ -24,30 +24,25 @@ const ALLOWED_ORIGINS = [
 ];
 
 export const mcpAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    console.log(`[Auth] Incoming request to ${req.path}`);
-    console.log('[Auth] Headers received:', req.headers);
-    console.log('[Auth] Query params:', req.query);
-
     const origin = req.headers.origin;
     if (origin && !ALLOWED_ORIGINS.includes(origin) && process.env.NODE_ENV === 'production') {
         // Only enforce in prod if Origin is present
-         console.warn(\`[Auth] Blocked request from unauthorized origin: \${origin}\`);
-        // return res.status(403).json({ error: 'Origin not allowed' });
+         console.warn(`[Auth] Blocked request from unauthorized origin: \${origin}`);
     }
 
     let token = '';
     const authHeader = req.headers.authorization;
-    console.log(\`[Auth] Raw Authorization header: \${authHeader}\`); // Log raw header
+    console.log(`[Auth] Raw Authorization header: \${authHeader}`); // Log raw header
 
     // Check header first
     if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.split(' ')[1];
-        console.log(\`[Auth] Token extracted from header: \${token.substring(0, 10)}...\`); // Log extracted token
+        console.log(`[Auth] Token extracted from header: \${token.substring(0, 10)}...`); // Log extracted token
     } 
     // Then check query param (if header is missing or malformed)
     else if (req.query.token) { 
         token = req.query.token as string;
-        console.log(\`[Auth] Token extracted from query parameter: \${token.substring(0, 10)}...\`); // Log extracted token
+        console.log(`[Auth] Token extracted from query parameter: \${token.substring(0, 10)}...`); // Log extracted token
     }
 
     if (!token) {
@@ -57,8 +52,8 @@ export const mcpAuthMiddleware = async (req: Request, res: Response, next: NextF
     }
 
     try {
-        console.log(\`[Auth] Attempting to validate token with: \${API_BASE_URL}/auth/me\`);
-        const response = await axios.get(\`\${API_BASE_URL}/auth/me\`, {
+        console.log(`[Auth] Attempting to validate token with: \${API_BASE_URL}/auth/me`);
+        const response = await axios.get(`\${API_BASE_URL}/auth/me`, {
             headers: { 'X-API-KEY': token },
         });
 
@@ -67,9 +62,8 @@ export const mcpAuthMiddleware = async (req: Request, res: Response, next: NextF
         next();
     } catch (error: any) {
         // Log more details about the error
-        console.error(\`[Auth] API Key validation failed for token starting with \${token.substring(0, 10)}...\`);
+        console.error(`[Auth] API Key validation failed for token starting with \${token.substring(0, 10)}...`);
         console.error('[Auth] Axios Error details:', error.response?.data || error.message);
         res.status(401).json({ error: 'Invalid API key or backend communication error' });
     }
-};
 };
