@@ -10,15 +10,27 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Stockage des sessions actives
-const sessions = new Map<string, { server: McpServer; transport: SSEServerTransport }>();
+// Stockage des sessions plus long pour éviter les 404 sur Render
+const sessions = new Map<string, { server: McpServer; transport: SSEServerTransport; lastAccess: number }>();
+
+// Nettoyage automatique des vieilles sessions toutes les 10 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [id, session] of sessions.entries()) {
+        if (now - session.lastAccess > 600000) { // 10 minutes
+            console.log(`[Cleanup] Suppression session expirée : ${id}`);
+            session.server.close();
+            sessions.delete(id);
+        }
+    }
+}, 60000);
 
 app.get('/health', (_req, res) => {
-    res.status(200).json({ status: 'ok', message: 'MCP server is running' });
+    res.status(200).json({ status: 'ok', message: 'MCP server is running', sessions: sessions.size });
 });
 
 /**
- * Endpoint SSE : Initialise la connexion persistante
+ * Endpoint SSE
  */
 app.get('/mcp/sse', mcpAuthMiddleware, async (req, res) => {
     const mcpReq = req as McpRequest;
@@ -27,50 +39,51 @@ app.get('/mcp/sse', mcpAuthMiddleware, async (req, res) => {
         return;
     }
 
-    // Désactiver le cache pour Render/Nginx
+    // Headers critiques pour Render
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); 
+    res.setHeader('X-Accel-Buffering', 'no');
 
     const sessionId = Math.random().toString(36).substring(7);
     const apiClient = createApiClient(mcpReq.apiToken);
     const server = createServerInstance(mcpReq.user.id, mcpReq.user.email);
     registerTools(server, apiClient);
 
-    const transport = new SSEServerTransport(`/mcp/messages?sessionId=${sessionId}`, res);
+    // Construction de l'URL absolue pour le transport (indispensable pour Render)
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const endpointUrl = `${protocol}://${host}/mcp/messages?sessionId=${sessionId}`;
+
+    console.log(`[SSE] Initialisation session ${sessionId} - Endpoint: ${endpointUrl}`);
+
+    const transport = new SSEServerTransport(endpointUrl as any, res);
 
     await server.connect(transport);
-    sessions.set(sessionId, { server, transport });
-
-    console.log(`[SSE] Session créée : ${sessionId} pour ${mcpReq.user.email}`);
+    sessions.set(sessionId, { server, transport, lastAccess: Date.now() });
 
     res.on('close', () => {
-        console.log(`[SSE] Session terminée : ${sessionId}`);
-        // On attend un peu avant de supprimer pour éviter les erreurs de timeout
-        setTimeout(() => {
-            sessions.delete(sessionId);
-            server.close();
-        }, 5000); 
+        console.log(`[SSE] Connexion interrompue pour ${sessionId} (session conservée en mémoire)`);
     });
 });
 
 /**
- * Endpoint Messages : Reçoit les requêtes JSON-RPC du client
+ * Endpoint Messages
  */
 app.post('/mcp/messages', async (req, res) => {
     const sessionId = req.query.sessionId as string;
     const session = sessions.get(sessionId);
 
     if (!session) {
-        console.error(`[POST] Session non trouvée : ${sessionId}`);
+        console.error(`[POST] Session non trouvée : ${sessionId}. Sessions actives : ${Array.from(sessions.keys()).join(', ')}`);
         res.status(404).json({ error: 'Session non trouvée ou expirée' });
         return;
     }
 
+    session.lastAccess = Date.now();
     await session.transport.handlePostMessage(req, res);
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 RocketReport MCP Server (SSE Stable) running on port ${PORT}`);
+    console.log(`🚀 RocketReport MCP Server (Render-Optimized) running on port ${PORT}`);
 });
