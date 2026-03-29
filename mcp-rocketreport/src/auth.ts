@@ -32,12 +32,18 @@ export const mcpAuthMiddleware = async (req: Request, res: Response, next: NextF
     }
 
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        res.status(401).json({ error: 'Missing or invalid Authorization header' });
-        return;
+    let token = '';
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+        token = req.query.token as string;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+        res.status(401).json({ error: 'Missing token in Authorization header or query parameter' });
+        return;
+    }
 
     try {
         const response = await axios.get(`${API_BASE_URL}/auth/me`, {

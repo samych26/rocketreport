@@ -1,8 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
-const MCP_URL = "https://rocketreport-mcp.onrender.com/mcp/sse";
 const TOKEN = "rr_mcp_55783e4134afe83e1aea9452dd6a1009c29a2603ac176fd4d8bb91f1d3835a0b";
+// On passe le token dans l'URL pour plus de stabilité sur Render
+const MCP_URL = `https://rocketreport-mcp.onrender.com/mcp/sse?token=${TOKEN}`;
 
 async function runTest() {
   console.log(`🔌 Connexion au serveur MCP SSE (RocketReport) sur ${MCP_URL}...`);
@@ -22,7 +23,6 @@ async function runTest() {
     await client.connect(transport);
     console.log("✅ Connecté au serveur MCP SSE avec succès !");
 
-    // Lister les outils disponibles
     console.log("\n📦 Outils disponibles sur ton MCP :");
     const toolsResult = await client.listTools();
     
@@ -37,12 +37,11 @@ async function runTest() {
   } catch (err: any) {
     if (err.message?.includes('401')) {
       console.error("❌ Erreur 401 : Ton token n'est pas reconnu par le backend !");
+      console.log("👉 Cause probable : Le serveur MCP sur Render n'utilise pas encore la variable ROCKETREPORT_API_URL.");
     } else {
       console.error("❌ Erreur lors de la connexion :", err.message || err);
-      console.log("👉 Assure-toi que ton serveur MCP est bien lancé (npm run dev dans mcp-rocketreport)");
     }
   } finally {
-    // Dans un vrai test SSE, le transport reste ouvert, ici on ferme pour le test
     process.exit(0);
   }
 }
