@@ -6,7 +6,6 @@ const TOKEN = "rr_mcp_3e9d5d6ae425baa8b0c40fbbabba26eae78c87b10e1d02ce3cf5812db3
 const MCP_URL = `https://rocketreport-mcp.onrender.com/mcp/sse?token=\${TOKEN}`;
 
 async function runTest() {
-  // Remplacement des caractères potentiellement problématiques et template literals pour plus de sécurité
   console.log(`Connecting to MCP SSE server (RocketReport) at \${MCP_URL}...`); 
   
   const transport = new SSEClientTransport(new URL(MCP_URL), {
