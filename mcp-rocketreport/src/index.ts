@@ -245,7 +245,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
 
   // 2. Try to get from request headers (some clients might send them)
   const meta = request.params._meta as any;
-  const headerApiKey = meta?.headers?.["authorization"]?.replace("Bearer ", "");
+  const headers = meta?.headers || {};
+  const authHeader = headers["authorization"] || headers["Authorization"] || headers["AUTHORIZATION"];
+  const headerApiKey = authHeader?.replace("Bearer ", "");
 
   // 3. Fallback to environment variable
   let effectiveApiKey = sessionApiKey || headerApiKey || process.env.ROCKETREPORT_API_KEY;
