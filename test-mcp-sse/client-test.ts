@@ -6,7 +6,8 @@ const TOKEN = "rr_mcp_3e9d5d6ae425baa8b0c40fbbabba26eae78c87b10e1d02ce3cf5812db3
 const MCP_URL = `https://rocketreport-mcp.onrender.com/mcp/sse?token=\${TOKEN}`;
 
 async function runTest() {
-  console.log(`🔌 Connexion au serveur MCP SSE (RocketReport) sur \${MCP_URL}...`);
+  // Remplacement des caractères potentiellement problématiques et template literals pour plus de sécurité
+  console.log(`Connecting to MCP SSE server (RocketReport) at \${MCP_URL}...`); 
   
   const transport = new SSEClientTransport(new URL(MCP_URL), {
     // Le token est maintenant uniquement dans l'URL, le header Authorization est supprimé pour éviter les conflits
@@ -19,14 +20,14 @@ async function runTest() {
 
   try {
     await client.connect(transport);
-    console.log("✅ Connecté au serveur MCP SSE avec succès !");
+    console.log("Successfully connected to MCP SSE server!"); 
 
     console.log("
-📦 Outils disponibles sur ton MCP :");
+Available tools on your MCP:");
     const toolsResult = await client.listTools();
     
     if (toolsResult.tools.length === 0) {
-      console.log("   (Aucun outil trouvé)");
+      console.log("   (No tools found)");
     } else {
       toolsResult.tools.forEach(t => {
         console.log(` - [${t.name}]: ${t.description}`);
@@ -35,10 +36,10 @@ async function runTest() {
 
   } catch (err: any) {
     if (err.message?.includes('401')) {
-      console.error("❌ Erreur 401 : Ton token n'est pas reconnu par le backend !");
-      console.log("👉 Cause probable : Le serveur MCP sur Render n'utilise pas encore la variable ROCKETREPORT_API_URL correctement.");
+      console.error("401 Error: Your token is not recognized by the backend!");
+      console.log("-> Possible cause: The MCP server on Render is not using the ROCKETREPORT_API_URL correctly.");
     } else {
-      console.error("❌ Erreur lors de la connexion :", err.message || err);
+      console.error("Connection error:", err.message || err);
     }
   } finally {
     process.exit(0);
