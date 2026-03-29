@@ -243,9 +243,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const { name, arguments: args } = request.params;
   
 
-  // 1. Try to get API key from session (SSE)
-  const sessionId = (extra as any)?.transport?.sessionId;
-  const sessionApiKey = sessionId ? sessionApiKeys.get(sessionId) : null;
+  // 1. Try to get API key from transport instance (SSE)
+  const sessionApiKey = (extra as any)?.rocketReportApiKey;
 
   // 2. Try to get from request headers (some clients might send them)
   const meta = request.params._meta as any;
@@ -253,7 +252,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const authHeader = headers["authorization"] || headers["Authorization"] || headers["AUTHORIZATION"];
   const headerApiKey = authHeader?.replace("Bearer ", "");
 
-  // 3. Fallback to environment variable
+  // 3. Fallback to environment variable (global admin key if defined)
   let effectiveApiKey = sessionApiKey || headerApiKey || process.env.ROCKETREPORT_API_KEY;
 
   // 4. Fallback to mcp.json (lecture dynamique)
@@ -332,9 +331,8 @@ if (mode === "sse") {
     console.error("New SSE connection attempt");
     const transport = new SSEServerTransport("/messages", res);
     const sessionId = transport.sessionId;
-    transports.set(sessionId, transport);
     
-    // Store API key from query param or Authorization header
+    // Store API key directly on the transport instance for this session
     let apiKey = (req.query.apiKey || req.query.apikey) as string | undefined;
     
     const authHeader = req.headers.authorization;
@@ -347,28 +345,30 @@ if (mode === "sse") {
     }
 
     if (apiKey) {
-      sessionApiKeys.set(sessionId, apiKey);
+      (transport as any).rocketReportApiKey = apiKey;
       console.error(`Session ${sessionId} authenticated via credentials`);
     } else {
       console.error(`Session ${sessionId} connected without an API key`);
     }
     
+    transports.set(sessionId, transport);
     await server.connect(transport);
     
     // Clean up when connection closes
     res.on("close", () => {
       transports.delete(sessionId);
-      sessionApiKeys.delete(sessionId);
       console.error(`Session ${sessionId} closed`);
     });
   });
 
-  app.post("/messages", async (req, res) => {
+  app.post("/messages", express.json(), async (req, res) => {
     const sessionId = req.query.sessionId as string;
     const transport = transports.get(sessionId);
 
     if (transport) {
-      await transport.handlePostMessage(req, res);
+      // In SSE, we must pass the transport as 'extra' to provide context to handlers
+      await server.receiveMessage(req.body, transport);
+      res.status(200).send("OK");
     } else {
       res.status(400).send("Session not found");
     }
