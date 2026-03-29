@@ -333,9 +333,9 @@ if (mode === "sse") {
     transports.set(sessionId, transport);
     
     // Store API key from query param or Authorization header
-    let apiKey = req.query.apiKey as string;
+    let apiKey = (req.query.apiKey || req.query.apikey) as string;
     
-    if (!apiKey && req.headers.authorization) {
+    if (!apiKey && (req.headers.authorization || req.headers.Authorization)) {
       const authHeader = req.headers.authorization;
       if (authHeader.startsWith("Bearer ")) {
         apiKey = authHeader.replace("Bearer ", "").trim();
