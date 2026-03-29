@@ -1,7 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import axios, { AxiosInstance } from "axios";
 
-console.log(\`[ServerInstance] Using API_BASE_URL: \${API_BASE_URL}\`);
+// Hardcoded URL for production on Render
+const API_BASE_URL = 'https://major-elissa-rocketreport-dbf39593.koyeb.app/api';
+console.log(`[ServerInstance] Using API_BASE_URL: \${API_BASE_URL}`);
 
 /**
  * Helper function to create an authenticated Axios client for a given token.
