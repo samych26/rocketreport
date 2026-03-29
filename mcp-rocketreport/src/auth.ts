@@ -12,7 +12,7 @@ export interface McpRequest extends Request {
     apiToken?: string;
 }
 
-const API_BASE_URL = process.env.ROCKETREPORT_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = 'https://major-elissa-rocketreport-dbf39593.koyeb.app/api';
 // In Docker, you might use 'http://backend:80' or whatever the backend service is named.
 // Make sure to set ROCKETREPORT_API_URL in production.
 
