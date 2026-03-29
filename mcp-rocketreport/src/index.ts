@@ -15,6 +15,10 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -26,7 +30,7 @@ try {
     mcpConfig = JSON.parse(fs.readFileSync(mcpPath, "utf-8"));
   }
 } catch (e) {
-  console.error("Erreur de lecture de mcp.json:", e);
+  // ignore
 }
 
 
@@ -255,13 +259,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   // 4. Fallback to mcp.json (lecture dynamique)
   if (!effectiveApiKey) {
     try {
-      const fs = await import("fs");
-      const path = await import("path");
       const mcpPath = path.resolve(__dirname, "../mcp.json");
       if (fs.existsSync(mcpPath)) {
-        const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, "utf-8"));
-        if (mcpConfig.apiKey) {
-          effectiveApiKey = mcpConfig.apiKey;
+        const mcpConfigLocal = JSON.parse(fs.readFileSync(mcpPath, "utf-8"));
+        if (mcpConfigLocal.apiKey) {
+          effectiveApiKey = mcpConfigLocal.apiKey;
         }
       }
     } catch (e) {
