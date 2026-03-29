@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
 const TOKEN = "rr_mcp_3e9d5d6ae425baa8b0c40fbbabba26eae78c87b10e1d02ce3cf5812db360087a";
-// Le token est maintenant uniquement dans l'URL, le header Authorization est supprimé pour éviter les conflits
+// On passe le token dans l'URL pour plus de stabilité sur Render
 const MCP_URL = `https://rocketreport-mcp.onrender.com/mcp/sse?token=\${TOKEN}`;
 
 async function runTest() {
