@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, Lock, Palette, LogOut, Trash2, Check, Loader2, Sun, Moon, Eye, EyeOff, Code, Copy, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Lock, Palette, LogOut, Trash2, Check, Loader2, Sun, Moon, Code, Copy } from 'lucide-react';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -7,7 +7,7 @@ import api from '../services/api';
 import './SettingsPage.css';
 
 const SettingsPage = () => {
-    const { user, logout, loginWithUser } = useAuth();
+    const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
     // MCP API Keys
