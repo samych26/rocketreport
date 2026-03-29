@@ -1,4 +1,2 @@
-import { log } from 'util';
-log('Script started on Render');
-
+console.log('----- MCP SERVER PROCESS STARTING -----');
 import './server.js';
