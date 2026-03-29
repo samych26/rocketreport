@@ -3,8 +3,9 @@
 **/node_modules/
 npm-debug.log*
 
-# ── Frontend build ────────────────────
+# ── Builds ──────────────────────────────
 frontend/dist/
+mcp-rocketreport/dist/
 
 # ── Symfony ───────────────────────────
 backend/.env.local

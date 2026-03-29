@@ -11,3 +11,17 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
+
+  - type: web
+    name: rocketreport-mcp
+    env: node
+    rootDir: mcp-rocketreport
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ROCKETREPORT_API_URL
+        sync: false # Ajoute ici l'URL de ton backend Symfony de prod depuis le dashboard Render

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Security;
 
-use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Repository\McpApiKeyRepositoryInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,11 +18,11 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 
 class ApiTokenAuthenticator extends AbstractAuthenticator
 {
-    private UserRepositoryInterface $userRepository;
+    private McpApiKeyRepositoryInterface $mcpApiKeyRepository;
 
-    public function __construct(UserRepositoryInterface $userRepository)
+    public function __construct(McpApiKeyRepositoryInterface $mcpApiKeyRepository)
     {
-        $this->userRepository = $userRepository;
+        $this->mcpApiKeyRepository = $mcpApiKeyRepository;
     }
 
     public function supports(Request $request): ?bool
@@ -40,11 +40,19 @@ class ApiTokenAuthenticator extends AbstractAuthenticator
 
         return new SelfValidatingPassport(
             new UserBadge($apiToken, function ($apiToken) {
-                $user = $this->userRepository->findByApiToken($apiToken);
-                if (!$user) {
+                $hash = hash('sha256', $apiToken);
+                $mcpKey = $this->mcpApiKeyRepository->findActiveByHash($hash);
+                
+                if (!$mcpKey) {
                     throw new CustomUserMessageAuthenticationException('Invalid API token');
                 }
-                return $user;
+                
+                // Update last used time
+                $mcpKey->touchLastUsed();
+                // Persist the change (optional, depending if we want a separate event/service, but usually done here)
+                $this->mcpApiKeyRepository->save($mcpKey);
+                
+                return $mcpKey->getUser();
             })
         );
     }

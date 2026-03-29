@@ -47,9 +47,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, nullable: true, unique: true)]
     private ?string $googleId = null;
 
-    #[ORM\Column(type: 'string', length: 64, nullable: true, unique: true)]
-    private ?string $apiToken = null;
-
     public function __construct(
         string $email,
         ?string $password,
@@ -59,13 +56,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->password = $password;
         $this->name = $name;
         $this->createdAt = new \DateTimeImmutable();
-        $this->generateApiToken();
-    }
-
-    public function generateApiToken(): self
-    {
-        $this->apiToken = bin2hex(random_bytes(32));
-        return $this;
     }
 
     public function getId(): ?int
@@ -148,6 +138,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getGoogleId(): ?string { return $this->googleId; }
     public function setGoogleId(?string $googleId): self { $this->googleId = $googleId; return $this; }
 
-    public function getApiToken(): ?string { return $this->apiToken; }
-    public function setApiToken(?string $apiToken): self { $this->apiToken = $apiToken; return $this; }
 }

@@ -10,11 +10,15 @@ const SettingsPage = () => {
     const { user, logout, loginWithUser } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
-    // API Key
-    const [apiKey, setApiKey] = useState(user?.api_token || '');
-    const [showApiKey, setShowApiKey] = useState(false);
-    const [apiKeyRegenerating, setApiKeyRegenerating] = useState(false);
-    const [apiKeyCopied, setApiKeyCopied] = useState(false);
+    // MCP API Keys
+    const [mcpKeys, setMcpKeys] = useState<{id: number, name: string, preview: string, createdAt: string, lastUsedAt: string|null}[]>([]);
+    const [keysLoading, setKeysLoading] = useState(false);
+    
+    // New key modal
+    const [newKey, setNewKey] = useState<string | null>(null);
+    const [newKeyName, setNewKeyName] = useState('');
+    const [isGeneratingKey, setIsGeneratingKey] = useState(false);
+    const [keyCopied, setKeyCopied] = useState(false);
 
     // Profile
     const [name, setName] = useState(user?.name || '');
@@ -35,6 +39,22 @@ const SettingsPage = () => {
     // Danger zone
     const [deleteConfirm, setDeleteConfirm] = useState('');
     const [deleting, setDeleting] = useState(false);
+
+    useEffect(() => {
+        loadMcpKeys();
+    }, []);
+
+    const loadMcpKeys = async () => {
+        setKeysLoading(true);
+        try {
+            const response = await api.get('/user/mcp-keys');
+            setMcpKeys(response.data.mcpKeys || []);
+        } catch (e) {
+            console.error('Erreur chargement clés MCP', e);
+        } finally {
+            setKeysLoading(false);
+        }
+    };
 
     const saveProfile = async () => {
         setProfileError('');
@@ -82,27 +102,35 @@ const SettingsPage = () => {
             setDeleting(false);
         }
     };
-    const regenerateApiKey = async () => {
-        if (!window.confirm('Voulez-vous vraiment régénérer votre clé API ? L\'ancienne clé ne fonctionnera plus.')) return;
-        setApiKeyRegenerating(true);
+    const generateMcpKey = async () => {
+        if (!newKeyName.trim()) { alert('Le nom est requis.'); return; }
+        setIsGeneratingKey(true);
         try {
-            const response = await api.post('/auth/regenerate-api-token');
-            const newToken = response.data.api_token;
-            setApiKey(newToken);
-            if (user) {
-                loginWithUser({ ...user, api_token: newToken });
-            }
+            const response = await api.post('/user/mcp-keys', { name: newKeyName.trim() });
+            setNewKey(response.data.key);
+            setNewKeyName('');
+            loadMcpKeys();
         } catch (e: any) {
-            alert(e.response?.data?.error || 'Erreur lors de la régénération.');
+            alert(e.response?.data?.error || 'Erreur lors de la génération.');
         } finally {
-            setApiKeyRegenerating(false);
+            setIsGeneratingKey(false);
         }
     };
 
-    const copyApiKey = () => {
-        navigator.clipboard.writeText(apiKey);
-        setApiKeyCopied(true);
-        setTimeout(() => setApiKeyCopied(false), 2000);
+    const revokeMcpKey = async (id: number) => {
+        if (!window.confirm('Voulez-vous vraiment révoquer cette clé ? Elle ne fonctionnera plus immédiatement.')) return;
+        try {
+            await api.delete(`/user/mcp-keys/${id}`);
+            loadMcpKeys();
+        } catch (e: any) {
+            alert(e.response?.data?.error || 'Erreur lors de la révocation.');
+        }
+    };
+
+    const copyKey = (key: string) => {
+        navigator.clipboard.writeText(key);
+        setKeyCopied(true);
+        setTimeout(() => setKeyCopied(false), 2000);
     };
 
     return (
@@ -212,44 +240,80 @@ const SettingsPage = () => {
                     </div>
                 </section>
 
-                {/* Developer / API Key */}
+                {/* Developer / MCP API Keys */}
                 <section className="settings-section">
                     <div className="settings-section-title">
                         <Code size={16} />
-                        <span>Développeur</span>
+                        <span>Clés API / Serveur MCP</span>
                     </div>
                     <div className="settings-card">
                         <p className="settings-card-desc">
-                            Utilisez votre clé API pour intégrer RocketReport dans vos applications ou via le package NPM.
+                            Utilisez ces clés pour configurer votre serveur MCP externe (Claude, Gemini, Antigravity) ou pour accéder à l'API via Rest/les SDKs.
                         </p>
-                        <div className="settings-field">
-                            <label>Clé API</label>
-                            <div className="api-key-input-wrap">
-                                <input
-                                    type={showApiKey ? 'text' : 'password'}
-                                    value={apiKey}
-                                    readOnly
-                                    className="settings-input api-key-input"
-                                />
-                                <div className="api-key-actions">
-                                    <button className="api-key-btn" onClick={() => setShowApiKey(!showApiKey)} title={showApiKey ? 'Masquer' : 'Afficher'}>
-                                        {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                    <button className="api-key-btn" onClick={copyApiKey} title="Copier">
-                                        {apiKeyCopied ? <Check size={16} className="success-icon" /> : <Copy size={16} />}
-                                    </button>
+                        
+                        {newKey && (
+                            <div className="new-key-alert" style={{ background: 'var(--mcp-surface)', padding: '15px', borderRadius: '8px', border: '1px solid var(--mcp-primary)', marginBottom: '20px' }}>
+                                <p style={{ color: 'var(--mcp-text-primary)', fontWeight: 'bold' }}>⚠️ Copiez votre clé maintenant :</p>
+                                <p className="field-hint">Pour des raisons de sécurité, cette clé ne sera <strong>plus jamais affichée</strong>.</p>
+                                
+                                <div className="api-key-input-wrap" style={{ marginTop: '10px' }}>
+                                    <input type="text" value={newKey} readOnly className="settings-input api-key-input" style={{ fontFamily: 'monospace' }} />
+                                    <div className="api-key-actions">
+                                        <button className="api-key-btn" onClick={() => copyKey(newKey)} title="Copier">
+                                            {keyCopied ? <Check size={16} className="success-icon" /> : <Copy size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
+                                <button className="settings-btn-secondary" onClick={() => setNewKey(null)} style={{ marginTop: '10px' }}>
+                                    J'ai bien copié la clé
+                                </button>
                             </div>
-                            <span className="field-hint">Gardez cette clé secrète !</span>
+                        )}
+
+                        <div className="settings-field">
+                            <label>Créer une nouvelle clé</label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <input
+                                    type="text"
+                                    value={newKeyName}
+                                    onChange={e => setNewKeyName(e.target.value)}
+                                    className="settings-input"
+                                    placeholder="Nom (ex: Claude Desktop)"
+                                    style={{ flex: 1 }}
+                                />
+                                <button
+                                    className="settings-btn-primary"
+                                    onClick={generateMcpKey}
+                                    disabled={isGeneratingKey || !newKeyName.trim()}
+                                >
+                                    {isGeneratingKey ? <Loader2 size={15} className="spin" /> : 'Créer'}
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            className="settings-btn-secondary"
-                            onClick={regenerateApiKey}
-                            disabled={apiKeyRegenerating}
-                        >
-                            {apiKeyRegenerating ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />}
-                            Régénérer la clé API
-                        </button>
+
+                        <div className="mcp-keys-list" style={{ marginTop: '30px' }}>
+                            <label>Vos clés actives ({mcpKeys.length})</label>
+                            {keysLoading ? (
+                                <p><Loader2 size={15} className="spin" /> Chargement...</p>
+                            ) : mcpKeys.length === 0 ? (
+                                <p className="field-hint">Aucune clé API configurée.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                                    {mcpKeys.map(k => (
+                                        <div key={k.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--mcp-surface)', border: '1px solid var(--mcp-border)', borderRadius: '6px' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 500, color: 'var(--mcp-text-primary)' }}>{k.name}</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--mcp-text-secondary)', fontFamily: 'monospace' }}>{k.preview}</div>
+                                                {k.lastUsedAt && <div style={{ fontSize: '0.7rem', color: 'var(--mcp-text-secondary)' }}>Dernière util. : {new Date(k.lastUsedAt).toLocaleString()}</div>}
+                                            </div>
+                                            <button className="settings-btn-danger-outline" style={{ padding: '6px 10px', fontSize: '0.8rem' }} onClick={() => revokeMcpKey(k.id)}>
+                                                Révoquer
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </section>
                 <section className="settings-section">
