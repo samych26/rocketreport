@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import axios, { AxiosInstance } from "axios";
 
-// Hardcoded URL for production on Render
-const API_BASE_URL = 'https://major-elissa-rocketreport-dbf39593.koyeb.app/api';
-console.log(`[ServerInstance] Using API_BASE_URL: \${API_BASE_URL}`);
+const API_BASE_URL = process.env.ROCKETREPORT_API_URL || 'http://localhost:8000/api';
+// In Docker, you might use 'http://backend:80' or whatever the backend service is named.
+// Make sure to set ROCKETREPORT_API_URL in production.
 
 /**
  * Helper function to create an authenticated Axios client for a given token.

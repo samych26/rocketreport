@@ -1,77 +1,58 @@
 import express from 'express';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { mcpAuthMiddleware, McpRequest } from './auth.js';
 import { createServerInstance, createApiClient } from './serverInstance.js';
 import { registerTools } from './tools/index.js';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-const sessions = new Map<string, { server: McpServer; transport: SSEServerTransport }>();
-
+// Health check endpoint
 app.get('/health', (_req, res) => {
-    res.status(200).json({ status: 'ok', sessions: sessions.size });
+    res.status(200).json({ status: 'ok', message: 'MCP server is running' });
 });
 
-app.get('/mcp/sse', mcpAuthMiddleware, async (req, res) => {
+/**
+ * Main MCP endpoint using Streamable HTTP Transport (MCP spec 2025-03-26).
+ * VS Code, Cursor and modern MCP clients use this single-endpoint pattern.
+ * The transport handles both regular JSON-RPC and SSE streaming internally.
+ */
+app.all('/mcp', mcpAuthMiddleware, async (req: express.Request, res: express.Response) => {
     const mcpReq = req as McpRequest;
-    
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-
-    const sessionId = Math.random().toString(36).substring(7);
-    
-    const apiClient = createApiClient(mcpReq.apiToken!);
-    const server = createServerInstance(mcpReq.user!.id, mcpReq.user!.email);
-    registerTools(server, apiClient);
-
-    // On utilise un chemin RELATIF simple pour le transport
-    const transportEndpoint = `/mcp/messages?sessionId=${sessionId}`;
-    console.log(`[SSE] Tentative de création du transport avec endpoint: ${transportEndpoint}`);
-    const transport = new SSEServerTransport(transportEndpoint, res);
-
-    await server.connect(transport);
-    sessions.set(sessionId, { server, transport });
-
-    console.log(`✅ [SSE] Session créée : ${sessionId} pour ${mcpReq.user?.email}`);
-
-    res.on('close', () => {
-        console.log(`⚠️ [SSE] Connexion fermée par le client pour ${sessionId}`);
-        setTimeout(() => {
-            if (sessions.has(sessionId)) {
-                console.log(`🗑️ [Cleanup] Suppression session ${sessionId}`);
-                server.close();
-                sessions.delete(sessionId);
-            }
-        }, 30000);
-    });
-});
-
-app.post('/mcp/messages', async (req, res) => {
-    const sessionId = req.query.sessionId as string;
-    const session = sessions.get(sessionId);
-
-    console.log(`📩 [POST] Message reçu pour session (requête) : ${sessionId}`);
-
-    if (!session) {
-        const activeSessions = Array.from(sessions.keys()).join(', ');
-        console.error(`❌ [POST] Session ${sessionId} non trouvée ! Sessions actives : [${activeSessions}]`);
-        res.status(404).json({ 
-            error: 'Session non trouvée ou expirée',
-            requestedId: sessionId,
-            availableSessions: activeSessions
-        });
+    if (!mcpReq.user || !mcpReq.apiToken) {
+        res.status(401).json({ error: 'Unauthorized' });
         return;
     }
 
-    await session.transport.handlePostMessage(req, res);
+    try {
+        const apiClient = createApiClient(mcpReq.apiToken);
+        const server = createServerInstance(mcpReq.user.id, mcpReq.user.email);
+        registerTools(server, apiClient);
+
+        // Stateless: one transport instance per request
+        const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: undefined, // Stateless mode
+        });
+
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+
+        res.on('close', () => {
+            transport.close();
+            server.close();
+        });
+
+    } catch (error: any) {
+        console.error('Failed to handle MCP request:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 RocketReport MCP Server (Diagnostic Mode) sur port ${PORT}`);
+    console.log(`🚀 RocketReport MCP Server running on port \${PORT}`);
+    console.log(`📡 MCP Endpoint: http://localhost:\${PORT}/mcp`);
 });
