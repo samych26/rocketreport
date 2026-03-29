@@ -46,7 +46,8 @@ export const mcpAuthMiddleware = async (req: Request, res: Response, next: NextF
     }
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+        console.log(\`[Auth] Attempting to validate token with: \${API_BASE_URL}/auth/me\`);
+        const response = await axios.get(\`\${API_BASE_URL}/auth/me\`, {
             headers: { 'X-API-KEY': token },
         });
 
@@ -54,7 +55,9 @@ export const mcpAuthMiddleware = async (req: Request, res: Response, next: NextF
         (req as McpRequest).apiToken = token;
         next();
     } catch (error: any) {
-        console.error('API Key validation failed:', error.response?.data || error.message);
-        res.status(401).json({ error: 'Invalid API key' });
+        // Log more details about the error
+        console.error(\`[Auth] API Key validation failed for token starting with \${token.substring(0, 10)}...\`);
+        console.error('[Auth] Axios Error details:', error.response?.data || error.message);
+        res.status(401).json({ error: 'Invalid API key or backend communication error' });
     }
-};
+    };
