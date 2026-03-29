@@ -27,24 +27,31 @@ app.get('/mcp/sse', mcpAuthMiddleware, async (req, res) => {
         return;
     }
 
+    // Désactiver le cache pour Render/Nginx
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); 
+
     const sessionId = Math.random().toString(36).substring(7);
     const apiClient = createApiClient(mcpReq.apiToken);
     const server = createServerInstance(mcpReq.user.id, mcpReq.user.email);
     registerTools(server, apiClient);
 
-    // Initialisation du transport SSE
-    // On indique au client qu'il doit envoyer ses messages POST vers /mcp/messages
     const transport = new SSEServerTransport(`/mcp/messages?sessionId=${sessionId}`, res);
 
     await server.connect(transport);
     sessions.set(sessionId, { server, transport });
 
-    console.log(`[SSE] Nouvelle session : ${sessionId} pour ${mcpReq.user.email}`);
+    console.log(`[SSE] Session créée : ${sessionId} pour ${mcpReq.user.email}`);
 
     res.on('close', () => {
-        console.log(`[SSE] Fermeture session : ${sessionId}`);
-        sessions.delete(sessionId);
-        server.close();
+        console.log(`[SSE] Session terminée : ${sessionId}`);
+        // On attend un peu avant de supprimer pour éviter les erreurs de timeout
+        setTimeout(() => {
+            sessions.delete(sessionId);
+            server.close();
+        }, 5000); 
     });
 });
 
@@ -56,6 +63,7 @@ app.post('/mcp/messages', async (req, res) => {
     const session = sessions.get(sessionId);
 
     if (!session) {
+        console.error(`[POST] Session non trouvée : ${sessionId}`);
         res.status(404).json({ error: 'Session non trouvée ou expirée' });
         return;
     }
@@ -64,6 +72,5 @@ app.post('/mcp/messages', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 RocketReport MCP Server (Mode SSE) running on port ${PORT}`);
-    console.log(`📡 SSE Endpoint: http://localhost:${PORT}/mcp/sse`);
+    console.log(`🚀 RocketReport MCP Server (SSE Stable) running on port ${PORT}`);
 });
