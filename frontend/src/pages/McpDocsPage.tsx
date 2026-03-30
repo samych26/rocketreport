@@ -16,10 +16,11 @@ const McpDocsPage = () => {
   "mcpServers": {
     "rocketreport": {
       "command": "npx",
-      "args": ["-y", "rocketreport-mcp-server"],
-      "env": {
-        "ROCKETREPORT_API_KEY": "VOTRE_CLE_API_ICI"
-      }
+      "args": [
+        "-y",
+        "@modelcontextprotocol/sse-client",
+        "https://rocketreport-mcp.onrender.com/mcp/sse?token=VOTRE_CLE_API_ICI"
+      ]
     }
   }
 }`;
@@ -90,9 +91,9 @@ const McpDocsPage = () => {
                                 <div className="mcp-code-wrapper">
                                     <div className="mcp-code-header">
                                         <span>Terminal</span>
-                                        <button className="mcp-copy-btn" onClick={() => copyToClipboard('export ROCKETREPORT_API_KEY=votre_cle\nnpx rocketreport-mcp-server')}>Copier</button>
+                                        <button className="mcp-copy-btn" onClick={() => copyToClipboard('npx -y @modelcontextprotocol/sse-client "https://rocketreport-mcp.onrender.com/mcp/sse?token=VOTRE_CLE_API_ICI"')}>Copier</button>
                                     </div>
-                                    <pre className="mcp-code-block">npx rocketreport-mcp-server</pre>
+                                    <pre className="mcp-code-block">npx -y @modelcontextprotocol/sse-client "https://rocketreport-mcp.onrender.com/mcp/sse?token=VOTRE_CLE_API_ICI"</pre>
                                 </div>
                             </div>
                         </div>
@@ -124,7 +125,7 @@ const McpDocsPage = () => {
                                 <h4>Ajouter le serveur</h4>
                                 <p>Dans votre terminal Gemini CLI, tapez :</p>
                                 <div className="mcp-code-wrapper">
-                                    <pre className="mcp-code-block">/mcp add rocketreport npx -y rocketreport-mcp-server</pre>
+                                    <pre className="mcp-code-block">/mcp add rocketreport npx -y @modelcontextprotocol/sse-client "https://rocketreport-mcp.onrender.com/mcp/sse?token=VOTRE_CLE_API_ICI"</pre>
                                 </div>
                             </div>
                         </div>
@@ -132,7 +133,7 @@ const McpDocsPage = () => {
                             <div className="mcp-step-number">2</div>
                             <div className="mcp-step-content">
                                 <h4>Authentification</h4>
-                                <p>Gemini vous demandera la clé API au premier lancement ou l'utilisera depuis vos variables d'environnement.</p>
+                                <p>Le token est directement passé dans l'URL. Aucune configuration supplémentaire n'est requise.</p>
                             </div>
                         </div>
                     </section>
@@ -165,7 +166,7 @@ const McpDocsPage = () => {
                         </p>
                         <p>Allez dans <strong>Settings &gt; Features &gt; MCP</strong>. Ajoutez un nouveau serveur de type <strong>command</strong> avec :</p>
                         <div className="mcp-code-wrapper">
-                            <pre className="mcp-code-block">npx -y rocketreport-mcp-server</pre>
+                            <pre className="mcp-code-block">npx -y @modelcontextprotocol/sse-client "https://rocketreport-mcp.onrender.com/mcp/sse?token=VOTRE_CLE_API_ICI"</pre>
                         </div>
                     </section>
 
@@ -199,11 +200,20 @@ const McpDocsPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td><span className="mcp-badge-tool">list_api_sources</span></td><td>Lister les connecteurs Stripe, SQL, etc.</td></tr>
-                                    <tr><td><span className="mcp-badge-tool">test_api_document</span></td><td>Échantillon de données pour l'analyse IA.</td></tr>
-                                    <tr><td><span className="mcp-badge-tool">upsert_template</span></td><td>Écriture de design Handlebars/HTML.</td></tr>
-                                    <tr><td><span className="mcp-badge-tool">upsert_build</span></td><td>Injection de logique JS/Python.</td></tr>
-                                    <tr><td><span className="mcp-badge-tool">generate_report</span></td><td>Production du document final.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">list_api_sources</span></td><td>Lister toutes les sources API configurées.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">get_api_source</span></td><td>Récupère les détails d'une source API.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">create_api_source</span></td><td>Crée une nouvelle source API.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">list_api_endpoints</span></td><td>Liste les endpoints API rattachés à une source.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">upsert_api_endpoint</span></td><td>Crée ou met à jour un endpoint API.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">list_documents</span></td><td>Lister et rechercher les documents récents.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">get_document</span></td><td>Récupère un document final.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">list_templates</span></td><td>Liste les templates Handlebars enregistrés.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">upsert_template</span></td><td>Crée ou met à jour un template documentaire.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">list_builds</span></td><td>Liste les pipelines de données (builds).</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">get_build</span></td><td>Récupère la configuration d'un pipeline.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">upsert_build</span></td><td>Crée ou maj un pipeline (API + Code + Template).</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">list_generations</span></td><td>Liste l'historique de génération des documents.</td></tr>
+                                    <tr><td><span className="mcp-badge-tool">generate_report</span></td><td>Lance une génération et retourne le PDF ou HTML.</td></tr>
                                 </tbody>
                             </table>
                         </div>

@@ -64,7 +64,7 @@
     left: 0;
     width: 0;
     height: 1.5px;
-    background: #3b82f6;
+    background: #d8b48f;
     transition: width 0.3s ease;
 }
 
@@ -115,21 +115,21 @@
 }
 
 .welcome-nav-btn-primary {
-    background: #3b82f6;
-    color: white;
+    background: #d8b48f;
+    color: #111;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.95rem;
     padding: 10px 24px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(216, 180, 143, 0.3);
     transition: all 0.2s;
 }
 
 .welcome-nav-btn-primary:hover {
-    background: #2563eb;
+    background: #c29d76;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 6px 20px rgba(216, 180, 143, 0.4);
 }
 
 .welcome-nav-mobile-toggle {

@@ -6,10 +6,10 @@
 :root {
   --font-heading: 'Poppins', system-ui, sans-serif;
   --font-body:    'Poppins', system-ui, sans-serif;
-  --indigo:       #6366f1;
-  --indigo-light: #818cf8;
-  --indigo-glow:  rgba(99, 102, 241, 0.45);
-  --bg-dark:      #04040b;
+  --indigo:       #d8b48f;
+  --indigo-light: #eaddc5;
+  --indigo-glow:  rgba(216, 180, 143, 0.45);
+  --bg-dark:      #111111;
   --bg-card:      rgba(255,255,255,0.035);
   --border:       rgba(255,255,255,0.07);
   --text-hi:      #f0f0ff;
@@ -48,9 +48,9 @@
   gap: 0.5rem;
   padding: 0.9rem 2.2rem;
   background: var(--indigo);
-  color: #fff !important;
+  color: #111 !important;
   text-decoration: none;
-  border-radius: 999px;
+  border-radius: 9px;
   font-family: var(--font-heading);
   font-size: 0.95rem;
   font-weight: 700;
@@ -59,8 +59,8 @@
   transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 .welcome-btn-primary:hover {
-  background: #4f46e5;
-  box-shadow: 0 0 44px rgba(99,102,241,0.7);
+  background: #c29d76;
+  box-shadow: 0 0 44px rgba(216,180,143,0.7);
   transform: translateY(-2px);
 }
 
@@ -72,7 +72,7 @@
   background: rgba(255,255,255,0.05);
   color: var(--text-hi) !important;
   text-decoration: none;
-  border-radius: 999px;
+  border-radius: 9px;
   font-family: var(--font-heading);
   font-size: 0.95rem;
   font-weight: 700;
@@ -131,11 +131,7 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to bottom,
-      rgba(4,4,11,0.50) 0%,
-      rgba(4,4,11,0.72) 55%,
-      rgba(4,4,11,1.00) 100%),
-    radial-gradient(ellipse 80% 60% at 50% 110%, rgba(99,102,241,0.18), transparent);
+    radial-gradient(ellipse 80% 60% at 50% 110%, rgba(216,180,143,0.12), transparent);
 }
 
 /* Subtle noise texture */
@@ -185,7 +181,7 @@
   line-height: 1.06;
   letter-spacing: -0.035em;
   margin: 0 0 1.4rem;
-  background: linear-gradient(155deg, #ffffff 0%, #c7d2fe 45%, #818cf8 100%);
+  background: linear-gradient(to right, #ffffff 40%, #d8b48f 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

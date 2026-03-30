@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
 import WelcomeNavbar from '../components/WelcomeNavbar';
-import backgroundVideo from '../assets/background.mp4';
 import './LoadingPage.css';
 
 /* Utility: add "in-view" class when element enters viewport */
@@ -35,7 +34,6 @@ const LoadingPage = () => {
 
             {/* ── HERO ── */}
             <section className="welcome-hero">
-                <video className="welcome-hero-bg" src={backgroundVideo} autoPlay muted loop playsInline />
                 <div className="welcome-hero-overlay" />
                 <div className="welcome-noise" />
 
@@ -55,7 +53,7 @@ const LoadingPage = () => {
             </section>
 
             {/* ── FEATURES ── */}
-            <section className="welcome-features">
+            <section id="features" className="welcome-features">
                 <div className="welcome-section-inner">
                     <p className="welcome-section-label reveal">{t('why_choose')}</p>
                     <h2 className="welcome-section-title reveal">{t('hero_title')}</h2>
@@ -73,7 +71,7 @@ const LoadingPage = () => {
             </section>
 
             {/* ── HOW IT WORKS ── */}
-            <section className="welcome-steps">
+            <section id="process" className="welcome-steps">
                 <div className="welcome-section-inner">
                     <p className="welcome-section-label reveal">{t('how_title')}</p>
                     <h2 className="welcome-section-title reveal">{t('how_title')}</h2>
@@ -91,7 +89,7 @@ const LoadingPage = () => {
             </section>
 
             {/* ── FOOTER ── */}
-            <footer className="welcome-footer">
+            <footer id="about" className="welcome-footer">
                 <span>🚀 RocketReport</span>
                 <p>{t('footer_text')}</p>
                 <span>{t('footer_links')}</span>

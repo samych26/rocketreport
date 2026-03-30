@@ -31,15 +31,18 @@ const WelcomeNavbar = () => {
                 </Link>
 
                 <div className={`welcome-nav-links ${isMenuOpen ? 'is-open' : ''}`}>
-                    <Link to="/mcp-docs" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
-                        {t('nav_mcp')}
-                    </Link>
-                    <a href="https://www.npmjs.com/package/rocketreport-mcp-server" target="_blank" rel="noopener noreferrer" className="welcome-nav-link">
-                        {t('nav_npm')}
+                    <a href="#features" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
+                        {t('nav_features' as any)}
                     </a>
-                    <Link to="/mcp-docs" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
-                        {t('nav_docs')}
-                    </Link>
+                    <a href="#process" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
+                        {t('nav_process' as any)}
+                    </a>
+                    <a href="#pricing" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
+                        {t('nav_pricing' as any)}
+                    </a>
+                    <a href="#about" className="welcome-nav-link" onClick={() => setIsMenuOpen(false)}>
+                        {t('nav_about' as any)}
+                    </a>
                     
                     <div className="welcome-nav-divider" />
                     
